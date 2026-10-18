@@ -70,7 +70,7 @@ export class CounsellingService {
         } else if (perspective === 'parent') {
           welcomeText = `Namaste! Welcome to SkillSaathi parent advising. Review verified vocational outcomes, income milestones, and job security for your child without common myths or hype.`;
         } else {
-          welcomeText = `Namaste and welcome to the SkillSaathi Family Career Counsellor. We help students and parents evaluate certified vocational trades, understand realistic earning trajectories, and make confident educational choices together.`;
+          welcomeText = `Namaste and welcome to the SkillSaathi Career Counsellor. We help students and parents evaluate certified vocational trades, understand realistic earning trajectories, and make confident educational choices together.`;
         }
       }
     }

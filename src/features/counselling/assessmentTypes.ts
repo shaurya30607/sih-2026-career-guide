@@ -20,6 +20,7 @@ export interface QuestionOption {
   id: string;
   label: LocalizedString;
   description?: LocalizedString;
+  icon?: string;
   streamKey?: string;
   value?: string;
 }
@@ -46,12 +47,14 @@ export type QuestionCategory =
   | 'participant'
   | 'education'
   | 'interests'
+  | 'strengths'
+  | 'environment'
+  | 'learning_style'
   | 'priorities'
+  | 'followup'
   | 'confidence'
   | 'concerns'
   | 'deep_dive'
-  | 'learning_style'
-  | 'environment'
   | 'progression'
   | 'course_explore'
   | 'additional';
@@ -76,6 +79,21 @@ export type AnswerValue = string | string[] | number;
 
 export type AssessmentAnswers = Record<string, AnswerValue>;
 
+export interface CareerRecommendation {
+  course: Course;
+  matchReason: LocalizedString;
+  skillsTaught: string[];
+  jobRoles: string;
+  durationAndMode: string;
+  eligibility: string;
+  whatToVerify: LocalizedString;
+}
+
+export interface InterestsSummaryData {
+  sentences: LocalizedString[];
+  tags: LocalizedString[];
+}
+
 export interface AssessmentResultsData {
   participantRole: string;
   educationLevel: string;
@@ -93,4 +111,9 @@ export interface AssessmentResultsData {
   recommendedCourses: Course[];
   discussionPoints: LocalizedString[];
   nextSteps: LocalizedString[];
+  // Extended properties for Redesigned Career Discovery Journey
+  summary?: InterestsSummaryData;
+  recommendations?: CareerRecommendation[];
+  activitiesSelected?: string[];
+  strengthsSelected?: string[];
 }

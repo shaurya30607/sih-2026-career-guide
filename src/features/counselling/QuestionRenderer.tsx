@@ -1,5 +1,33 @@
 import React from 'react';
-import { Check, Info } from 'lucide-react';
+import {
+  Check,
+  Info,
+  Wrench,
+  Cpu,
+  Heart,
+  Sprout,
+  Ruler,
+  Zap,
+  MessageSquare,
+  Palette,
+  HelpCircle,
+  Lightbulb,
+  Hammer,
+  Monitor,
+  Users,
+  Target,
+  CheckSquare,
+  Sparkles,
+  Compass,
+  Factory,
+  Building,
+  Activity,
+  Sun,
+  UserCheck,
+  Globe,
+  User,
+  AlertCircle,
+} from 'lucide-react';
 import {
   AssessmentLanguage,
   AssessmentQuestion,
@@ -23,6 +51,64 @@ function getLocalized(loc: LocalizedString | undefined, lang: AssessmentLanguage
   return loc.en || loc.mr || '';
 }
 
+function renderOptionIcon(iconName: string | undefined) {
+  if (!iconName) return null;
+  const iconProps = { size: 20, 'aria-hidden': true };
+
+  switch (iconName) {
+    case 'wrench':
+      return <Wrench {...iconProps} />;
+    case 'cpu':
+      return <Cpu {...iconProps} />;
+    case 'heart':
+      return <Heart {...iconProps} />;
+    case 'sprout':
+      return <Sprout {...iconProps} />;
+    case 'ruler':
+      return <Ruler {...iconProps} />;
+    case 'zap':
+      return <Zap {...iconProps} />;
+    case 'message-square':
+      return <MessageSquare {...iconProps} />;
+    case 'palette':
+      return <Palette {...iconProps} />;
+    case 'help-circle':
+      return <HelpCircle {...iconProps} />;
+    case 'lightbulb':
+      return <Lightbulb {...iconProps} />;
+    case 'hammer':
+      return <Hammer {...iconProps} />;
+    case 'monitor':
+      return <Monitor {...iconProps} />;
+    case 'users':
+      return <Users {...iconProps} />;
+    case 'target':
+      return <Target {...iconProps} />;
+    case 'check-square':
+      return <CheckSquare {...iconProps} />;
+    case 'sparkles':
+      return <Sparkles {...iconProps} />;
+    case 'compass':
+      return <Compass {...iconProps} />;
+    case 'factory':
+      return <Factory {...iconProps} />;
+    case 'building':
+      return <Building {...iconProps} />;
+    case 'activity':
+      return <Activity {...iconProps} />;
+    case 'sun':
+      return <Sun {...iconProps} />;
+    case 'user-check':
+      return <UserCheck {...iconProps} />;
+    case 'globe':
+      return <Globe {...iconProps} />;
+    case 'user':
+      return <User {...iconProps} />;
+    default:
+      return null;
+  }
+}
+
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   question,
   currentAnswer,
@@ -38,16 +124,30 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     onAnswerChange(optionId);
   };
 
-  // Multiple Choice Handler
+  // Multiple Choice Handler with intelligent "not sure yet" handling
   const handleMultipleSelect = (optionId: string) => {
     const currentList = Array.isArray(currentAnswer) ? (currentAnswer as string[]) : [];
-    if (currentList.includes(optionId)) {
-      onAnswerChange(currentList.filter((id) => id !== optionId));
+
+    if (optionId === 'not_sure_yet' || optionId === 'not_sure_env') {
+      if (currentList.includes(optionId)) {
+        onAnswerChange([]);
+      } else {
+        // If selecting "not sure yet", set as only choice
+        onAnswerChange([optionId]);
+      }
+      return;
+    }
+
+    // If currently has "not sure yet" and user clicks another option, remove "not sure yet"
+    const cleaned = currentList.filter((id) => id !== 'not_sure_yet' && id !== 'not_sure_env');
+
+    if (cleaned.includes(optionId)) {
+      onAnswerChange(cleaned.filter((id) => id !== optionId));
     } else {
-      if (question.maxSelections && currentList.length >= question.maxSelections) {
+      if (question.maxSelections && cleaned.length >= question.maxSelections) {
         return; // Selection limit reached
       }
-      onAnswerChange([...currentList, optionId]);
+      onAnswerChange([...cleaned, optionId]);
     }
   };
 
@@ -62,11 +162,31 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   };
 
   const selectedCount = Array.isArray(currentAnswer) ? currentAnswer.length : 0;
-  const multiLimitNotice = isHi
-    ? `अधिकतम ${question.maxSelections} विकल्प चुन सकते हैं (चुने गए: ${selectedCount}/${question.maxSelections})`
-    : isMr
-    ? `कमाल ${question.maxSelections} पर्याय निवडू शकता (निवडले: ${selectedCount}/${question.maxSelections})`
-    : `Select up to ${question.maxSelections} priorities (selected: ${selectedCount}/${question.maxSelections})`;
+
+  let selectionInstructionBadge: string;
+  if (question.responseType === 'single_choice' || question.responseType === 'yes_no_unsure') {
+    selectionInstructionBadge = isHi
+      ? 'एक विकल्प चुनें'
+      : isMr
+      ? 'एक पर्याय निवडा'
+      : 'Choose one option';
+  } else if (question.responseType === 'multiple_choice') {
+    if (question.maxSelections) {
+      selectionInstructionBadge = isHi
+        ? `अधिकतम ${question.maxSelections} विकल्प चुन सकते हैं (${selectedCount} / ${question.maxSelections} चुने गए)`
+        : isMr
+        ? `जास्तीत जास्त ${question.maxSelections} पर्याय निवडू शकता (${question.maxSelections} पैकी ${selectedCount} निवडले)`
+        : `Choose up to ${question.maxSelections} options (${selectedCount} of ${question.maxSelections} selected)`;
+    } else {
+      selectionInstructionBadge = isHi
+        ? `उपयुक्त विकल्प चुनें (${selectedCount} चुने गए)`
+        : isMr
+        ? `लागू असणारे पर्याय निवडा (${selectedCount} निवडले)`
+        : `Select all that apply (${selectedCount} selected)`;
+    }
+  } else {
+    selectionInstructionBadge = '';
+  }
 
   return (
     <div
@@ -74,23 +194,34 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       style={{
         backgroundColor: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '2rem',
+        borderRadius: 'var(--radius-xl, 16px)',
+        padding: '2rem 1.75rem',
         boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         flexDirection: 'column',
         gap: '1.5rem',
       }}
     >
-      {/* Question Heading & Guidance */}
+      {/* Question Heading & Instructions */}
       <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.625rem' }}>
+          <Badge variant="primary" size="sm">
+            {getLocalized(question.categoryLabel, language)}
+          </Badge>
+          {selectionInstructionBadge && (
+            <Badge variant="neutral" size="sm">
+              {selectionInstructionBadge}
+            </Badge>
+          )}
+        </div>
+
         <h2
           id={`question-title-${question.id}`}
           style={{
-            fontSize: '1.375rem',
-            fontWeight: 700,
+            fontSize: 'clamp(1.25rem, 2.5vw, 1.5rem)',
+            fontWeight: 800,
             color: 'var(--color-text-primary)',
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.015em',
             lineHeight: 1.35,
             marginBottom: '0.5rem',
           }}
@@ -101,29 +232,20 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         {question.description && (
           <p
             style={{
-              fontSize: '0.875rem',
+              fontSize: '0.9375rem',
               color: 'var(--color-text-secondary)',
-              lineHeight: 1.5,
+              lineHeight: 1.55,
               margin: 0,
             }}
           >
             {getLocalized(question.description, language)}
           </p>
         )}
-
-        {/* Multi-select limit notice */}
-        {question.responseType === 'multiple_choice' && question.maxSelections && (
-          <div style={{ marginTop: '0.625rem' }}>
-            <Badge variant="neutral" size="sm">
-              {multiLimitNotice}
-            </Badge>
-          </div>
-        )}
       </div>
 
       {/* Answer Controls by Response Type */}
       <div>
-        {/* A. Single Choice */}
+        {/* A. Single Choice Options */}
         {question.responseType === 'single_choice' && question.options && (
           <div
             role="radiogroup"
@@ -136,6 +258,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           >
             {question.options.map((opt) => {
               const isSelected = currentAnswer === opt.id;
+              const iconEl = renderOptionIcon(opt.icon);
+
               return (
                 <button
                   key={opt.id}
@@ -145,20 +269,21 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                   onClick={() => handleSingleSelect(opt.id)}
                   style={{
                     display: 'flex',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     gap: '1rem',
                     padding: '1rem 1.25rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-surface)',
+                    borderRadius: 'var(--radius-lg, 12px)',
+                    border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    backgroundColor: isSelected ? 'var(--color-primary-subtle, #eff6ff)' : 'var(--color-surface)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'all 150ms ease',
                     boxShadow: isSelected ? '0 0 0 1px var(--color-primary)' : 'none',
+                    minHeight: '52px',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+                      e.currentTarget.style.borderColor = 'var(--color-border-strong, #94a3b8)';
                       e.currentTarget.style.backgroundColor = 'var(--color-bg)';
                     }
                   }}
@@ -172,16 +297,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                   {/* Radio circle */}
                   <div
                     style={{
-                      width: '20px',
-                      height: '20px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
-                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-strong)'}`,
+                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-strong, #94a3b8)'}`,
                       backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      marginTop: '2px',
                       transition: 'all 150ms ease',
                     }}
                     aria-hidden="true"
@@ -197,6 +321,21 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       />
                     )}
                   </div>
+
+                  {/* Optional Icon */}
+                  {iconEl && (
+                    <div
+                      style={{
+                        color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {iconEl}
+                    </div>
+                  )}
 
                   <div style={{ flex: 1 }}>
                     <div
@@ -228,15 +367,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           </div>
         )}
 
-        {/* B. Multiple Choice */}
+        {/* B. Multiple Choice Options (Touch-friendly responsive grid) */}
         {question.responseType === 'multiple_choice' && question.options && (
           <div
             role="group"
             aria-labelledby={`question-title-${question.id}`}
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '0.75rem',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '0.875rem',
             }}
           >
             {question.options.map((opt) => {
@@ -245,32 +384,39 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               const isMaxReached = Boolean(
                 question.maxSelections && selectedList.length >= question.maxSelections && !isSelected
               );
+              const iconEl = renderOptionIcon(opt.icon);
 
               return (
                 <button
                   key={opt.id}
                   type="button"
-                  role="checkbox"
-                  aria-checked={isSelected}
+                  aria-pressed={isSelected}
                   disabled={isMaxReached}
                   onClick={() => handleMultipleSelect(opt.id)}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '0.875rem',
-                    padding: '0.875rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-surface)',
+                    padding: '1.125rem',
+                    borderRadius: 'var(--radius-lg, 12px)',
+                    border: `2px solid ${
+                      isSelected ? 'var(--color-primary)' : 'var(--color-border)'
+                    }`,
+                    backgroundColor: isSelected
+                      ? 'var(--color-primary-subtle, #eff6ff)'
+                      : isMaxReached
+                      ? 'var(--color-surface-muted, #f8fafc)'
+                      : 'var(--color-surface)',
                     cursor: isMaxReached ? 'not-allowed' : 'pointer',
-                    opacity: isMaxReached ? 0.6 : 1,
                     textAlign: 'left',
+                    opacity: isMaxReached ? 0.6 : 1,
                     transition: 'all 150ms ease',
                     boxShadow: isSelected ? '0 0 0 1px var(--color-primary)' : 'none',
+                    minHeight: '56px',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected && !isMaxReached) {
-                      e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+                      e.currentTarget.style.borderColor = 'var(--color-border-strong, #94a3b8)';
                       e.currentTarget.style.backgroundColor = 'var(--color-bg)';
                     }
                   }}
@@ -281,31 +427,47 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     }
                   }}
                 >
-                  {/* Checkbox Box */}
+                  {/* Checkbox box */}
                   <div
                     style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: 'var(--radius-xs)',
-                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-strong)'}`,
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: 'var(--radius-sm, 6px)',
+                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-strong, #94a3b8)'}`,
                       backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      color: '#ffffff',
                       flexShrink: 0,
                       marginTop: '2px',
                       transition: 'all 150ms ease',
-                      color: '#ffffff',
                     }}
                     aria-hidden="true"
                   >
                     {isSelected && <Check size={14} strokeWidth={3} />}
                   </div>
 
+                  {/* Optional Icon */}
+                  {iconEl && (
+                    <div
+                      style={{
+                        color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: '2px',
+                      }}
+                    >
+                      {iconEl}
+                    </div>
+                  )}
+
                   <div style={{ flex: 1 }}>
                     <div
                       style={{
-                        fontSize: '0.875rem',
+                        fontSize: '0.9375rem',
                         fontWeight: isSelected ? 700 : 600,
                         color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
                         lineHeight: 1.35,
@@ -316,10 +478,10 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     {opt.description && (
                       <div
                         style={{
-                          fontSize: '0.75rem',
+                          fontSize: '0.8125rem',
                           color: 'var(--color-text-secondary)',
                           marginTop: '0.25rem',
-                          lineHeight: 1.35,
+                          lineHeight: 1.4,
                         }}
                       >
                         {getLocalized(opt.description, language)}
@@ -332,130 +494,100 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           </div>
         )}
 
-        {/* C. Rating Scale (1 to 5 with full labels) */}
-        {question.responseType === 'rating_scale' && question.ratingConfig && (
-          <div
-            role="radiogroup"
-            aria-labelledby={`question-title-${question.id}`}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}
-          >
-            <div
+        {/* C. Free Text Area */}
+        {question.responseType === 'free_text' && (
+          <div>
+            <textarea
+              id={`textarea-${question.id}`}
+              rows={4}
+              value={typeof currentAnswer === 'string' ? currentAnswer : ''}
+              onChange={handleTextChange}
+              placeholder={getLocalized(question.placeholder, language)}
+              aria-label={getLocalized(question.question, language)}
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(5, 1fr)',
-                gap: '0.625rem',
+                width: '100%',
+                padding: '0.875rem 1rem',
+                borderRadius: 'var(--radius-md, 8px)',
+                border: '1.5px solid var(--color-border)',
+                backgroundColor: 'var(--color-bg)',
+                color: 'var(--color-text-primary)',
+                fontSize: '0.9375rem',
+                fontFamily: 'inherit',
+                lineHeight: 1.5,
+                resize: 'vertical',
+                outline: 'none',
               }}
-            >
-              {[1, 2, 3, 4, 5].map((score) => {
-                const isSelected = currentAnswer === score;
-                const labelObj = question.ratingConfig?.labels[score];
-                const scoreLabel = labelObj ? getLocalized(labelObj, language) : `Score ${score}`;
-
-                return (
-                  <button
-                    key={score}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => onAnswerChange(score)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      padding: '1rem 0.5rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                      backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-surface)',
-                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                      cursor: 'pointer',
-                      transition: 'all 150ms ease',
-                      textAlign: 'center',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'var(--color-border-strong)';
-                        e.currentTarget.style.backgroundColor = 'var(--color-bg)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'var(--color-border)';
-                        e.currentTarget.style.backgroundColor = 'var(--color-surface)';
-                      }
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '1.5rem',
-                        fontWeight: 800,
-                        lineHeight: 1,
-                        marginBottom: '0.5rem',
-                      }}
-                    >
-                      {score}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: isSelected ? 700 : 500,
-                        lineHeight: 1.3,
-                        color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                      }}
-                    >
-                      {scoreLabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-primary-subtle)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.75rem',
+                alignItems: 'center',
+                gap: '0.375rem',
+                marginTop: '0.5rem',
+                fontSize: '0.8125rem',
                 color: 'var(--color-text-muted)',
-                padding: '0 0.25rem',
               }}
             >
-              <span>← {isHi ? 'कम आत्मविश्वास / शुरुआत' : isMr ? 'कमी आत्मविश्वास / सुरुवात' : 'Least confident / Just starting'}</span>
-              <span>{isHi ? 'पूर्णतः आश्वस्त / शुरुआत के लिए तैयार' : isMr ? 'खूप स्पष्ट / तयार' : 'Very confident / Ready to start'} →</span>
+              <Info size={14} aria-hidden="true" />
+              <span>
+                {isHi
+                  ? 'यह एक स्वैच्छिक क्षेत्र है। कृपया आधार, बैंक या अन्य गोपनीय विवरण न भरें।'
+                  : isMr
+                  ? 'हा ऐच्छिक भाग आहे. कृपया कोणतीही गोपनीय वैयक्तिक माहिती भरू नका.'
+                  : 'Optional. Do not submit sensitive personal, identification, or banking details.'}
+              </span>
             </div>
           </div>
         )}
 
-        {/* D. Numeric Range / Slider */}
+        {/* D. Numeric Range Slider */}
         {question.responseType === 'numeric_range' && question.numericConfig && (
           <div
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1.25rem',
-              padding: '1rem',
+              padding: '1.5rem',
               backgroundColor: 'var(--color-bg)',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 'var(--radius-md, 8px)',
               border: '1px solid var(--color-border-subtle)',
             }}
           >
-            {/* Live Value Display Badge */}
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.375rem' }}>
-              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {question.numericConfig.prefix}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1rem',
+              }}
+            >
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                {getLocalized(question.numericConfig.minLabel, language)}
+              </span>
+              <span
+                style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 800,
+                  color: 'var(--color-primary)',
+                }}
+              >
+                {question.numericConfig.prefix || ''}
                 {(typeof currentAnswer === 'number'
                   ? currentAnswer
                   : question.numericConfig.defaultValue
                 ).toLocaleString('en-IN')}
+                {question.numericConfig.suffix || ''}
               </span>
-              <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                {isHi ? ' / माह' : isMr ? ' / महिना' : question.numericConfig.suffix}
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                {getLocalized(question.numericConfig.maxLabel, language)}
               </span>
             </div>
 
-            {/* Slider Input */}
             <input
               type="range"
               min={question.numericConfig.min}
@@ -463,182 +595,85 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               step={question.numericConfig.step}
               value={typeof currentAnswer === 'number' ? currentAnswer : question.numericConfig.defaultValue}
               onChange={handleNumericChange}
-              aria-label={getLocalized(question.question, language)}
-              style={{
-                width: '100%',
-                cursor: 'pointer',
-                accentColor: 'var(--color-primary)',
-              }}
+              style={{ width: '100%', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
             />
-
-            {/* Min and Max Range Labels */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.8125rem',
-                color: 'var(--color-text-muted)',
-                fontWeight: 500,
-              }}
-            >
-              <span>{question.numericConfig.minLabel ? getLocalized(question.numericConfig.minLabel, language) : question.numericConfig.min}</span>
-              <span>{question.numericConfig.maxLabel ? getLocalized(question.numericConfig.maxLabel, language) : question.numericConfig.max}</span>
-            </div>
-
-            {/* Benchmark Guidance Note */}
-            {question.numericConfig.helperText && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-text-secondary)',
-                  backgroundColor: 'var(--color-surface)',
-                  padding: '0.625rem 0.875rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <Info size={15} style={{ color: 'var(--color-primary)', flexShrink: 0 }} aria-hidden="true" />
-                <span>
-                  {getLocalized(question.numericConfig.helperText, language)}
-                </span>
-              </div>
-            )}
           </div>
         )}
 
-        {/* E. Yes / No / Unsure */}
-        {question.responseType === 'yes_no_unsure' && (
+        {/* E. Rating Scale */}
+        {question.responseType === 'rating_scale' && question.ratingConfig && (
           <div
             role="radiogroup"
-            aria-labelledby={`question-title-${question.id}`}
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
               gap: '0.75rem',
             }}
           >
-            {[
-              { id: 'yes', label: { en: 'Yes', mr: 'होय', hi: 'हाँ' } },
-              { id: 'no', label: { en: 'No', mr: 'नाही', hi: 'नहीं' } },
-              { id: 'unsure', label: { en: 'Not Sure', mr: 'निश्चित नाही', hi: 'निश्चित नहीं' } },
-            ].map((item) => {
-              const isSelected = currentAnswer === item.id;
+            {[1, 2, 3, 4, 5].map((num) => {
+              const isSelected = currentAnswer === num;
+              const label = question.ratingConfig?.labels[num];
               return (
                 <button
-                  key={item.id}
+                  key={num}
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
-                  onClick={() => onAnswerChange(item.id)}
+                  onClick={() => onAnswerChange(num)}
                   style={{
-                    padding: '1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '1rem 0.75rem',
+                    borderRadius: 'var(--radius-md, 8px)',
+                    border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
                     backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-surface)',
-                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                    fontWeight: isSelected ? 700 : 600,
-                    fontSize: '0.9375rem',
                     cursor: 'pointer',
                     textAlign: 'center',
-                    transition: 'all 150ms ease',
+                    gap: '0.375rem',
+                    minHeight: '84px',
                   }}
                 >
-                  {getLocalized(item.label, language)}
+                  <span
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                    }}
+                  >
+                    {num}
+                  </span>
+                  {label && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.3 }}>
+                      {getLocalized(label, language)}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
-
-        {/* F. Free Text */}
-        {question.responseType === 'free_text' && (
-          <div>
-            <textarea
-              rows={4}
-              value={typeof currentAnswer === 'string' ? currentAnswer : ''}
-              onChange={handleTextChange}
-              placeholder={
-                question.placeholder
-                  ? getLocalized(question.placeholder, language)
-                  : isHi
-                  ? 'अपने विचार यहाँ लिखें...'
-                  : isMr
-                  ? 'आपले विचार येथे लिहा...'
-                  : 'Enter your response here...'
-              }
-              aria-label={getLocalized(question.question, language)}
-              style={{
-                width: '100%',
-                padding: '0.875rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1.5px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary)',
-                lineHeight: 1.5,
-                fontFamily: 'inherit',
-                outline: 'none',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-primary)';
-                e.currentTarget.style.backgroundColor = 'var(--color-surface)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.backgroundColor = 'var(--color-bg)';
-              }}
-            />
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.75rem',
-                color: 'var(--color-text-muted)',
-                marginTop: '0.375rem',
-              }}
-            >
-              <span>
-                {question.required
-                  ? isHi
-                    ? '* आवश्यक जानकारी'
-                    : isMr
-                    ? '* आवश्यक माहिती'
-                    : '* Required response'
-                  : isHi
-                  ? 'ऐच्छिक (खाली छोड़ सकते हैं)'
-                  : isMr
-                  ? 'ऐच्छिक (वगळू शकता)'
-                  : 'Optional (may leave blank)'}
-              </span>
-              <span>
-                {typeof currentAnswer === 'string' ? currentAnswer.length : 0} {isHi ? 'अक्षर' : isMr ? 'अक्षरे' : 'characters'}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Validation Error Message if user clicked Continue prematurely */}
+      {/* Validation Alert */}
       {validationError && (
         <div
           role="alert"
           style={{
-            fontSize: '0.8125rem',
-            color: 'var(--color-error)',
-            backgroundColor: 'var(--color-error-bg)',
-            border: '1px solid var(--color-error-border)',
-            padding: '0.5rem 0.75rem',
-            borderRadius: 'var(--radius-sm)',
-            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1rem',
+            borderRadius: 'var(--radius-md, 8px)',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            fontSize: '0.875rem',
+            fontWeight: 600,
           }}
         >
-          {validationError}
+          <AlertCircle size={18} aria-hidden="true" style={{ flexShrink: 0 }} />
+          <span>{validationError}</span>
         </div>
       )}
     </div>

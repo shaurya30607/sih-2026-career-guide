@@ -37,7 +37,7 @@ export const NAVIGATION_ITEMS: NavItemConfig[] = [
   },
   {
     id: 'counselling',
-    label: 'Family Career Guidance',
+    label: 'Career Guidance',
     translationKey: 'nav.familyGuidance',
     route: ROUTES.COUNSELLING,
     icon: MessageSquareQuote,

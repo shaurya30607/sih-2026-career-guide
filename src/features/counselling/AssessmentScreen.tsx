@@ -8,6 +8,7 @@ import { assessmentService } from './assessmentService';
 import { AssessmentProgress } from './AssessmentProgress';
 import { QuestionRenderer } from './QuestionRenderer';
 import { AssessmentResults } from './AssessmentResults';
+import { CareerGuidanceIntro } from './CareerGuidanceIntro';
 import { Button } from '../../components/common/Button';
 import { ROUTES } from '../../app/routes';
 import { useTranslation, SupportedLanguageCode } from '../../i18n';
@@ -19,6 +20,8 @@ export interface AssessmentScreenProps {
   onViewCourseDetails?: (courseId: string) => void;
 }
 
+export type GuidanceViewMode = 'intro' | 'assessment' | 'results';
+
 export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
   courseId,
   onNavigate,
@@ -26,12 +29,13 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
   onViewCourseDetails,
 }) => {
   const { language, changeLanguage, t } = useTranslation();
+  const [viewMode, setViewMode] = useState<GuidanceViewMode>('intro');
   const [answers, setAnswers] = useState<AssessmentAnswers>({});
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
   const [historyStack, setHistoryStack] = useState<number[]>([]);
-  const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
+  const [hasSavedSession, setHasSavedSession] = useState<boolean>(false);
 
   // Restore saved session or pre-seed course context on initial mount
   useEffect(() => {
@@ -39,13 +43,14 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
     if (saved && Object.keys(saved.answers).length > 0) {
       setAnswers(saved.answers);
       setActiveQuestionIndex(saved.activeQuestionIndex || 0);
+      setHasSavedSession(true);
     } else if (courseId) {
-      // Pre-seed the course exploration question if arrived from a course
+      // If user directly clicked "Ask counsellor about this course"
       setAnswers({ q_target_course: courseId });
     }
   }, [courseId]);
 
-  // Compute active question list based on current answers
+  // Compute active question list dynamically based on current answers
   const activeQuestions = assessmentService.getActiveQuestions(answers);
   const totalQuestions = activeQuestions.length;
 
@@ -58,13 +63,35 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
     (newVal: AnswerValue) => {
       setValidationError(null);
       setAnswers((prev) => {
-        const next = { ...prev, [currentQuestion.id]: newVal };
+        const next = { ...prev, [currentQuestion?.id]: newVal };
         // Clean out answers that may no longer be applicable if an earlier answer changed
-        return assessmentService.cleanIrrelevantAnswers(next);
+        const cleaned = assessmentService.cleanIrrelevantAnswers(next);
+        // Persist progress to session
+        assessmentService.saveSession(cleaned, safeIndex);
+        setHasSavedSession(true);
+        return cleaned;
       });
     },
-    [currentQuestion?.id]
+    [currentQuestion?.id, safeIndex]
   );
+
+  // Start fresh assessment
+  const handleStartFresh = () => {
+    assessmentService.clearSession();
+    setAnswers({});
+    setActiveQuestionIndex(0);
+    setHistoryStack([]);
+    setHasSavedSession(false);
+    setValidationError(null);
+    setViewMode('assessment');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Resume saved assessment
+  const handleResume = () => {
+    setViewMode('assessment');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Handle Continue to next question or complete
   const handleContinue = () => {
@@ -86,25 +113,38 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
 
     // Save session snapshot
     assessmentService.saveSession(answers, safeIndex + 1);
+    setHasSavedSession(true);
 
     if (safeIndex < totalQuestions - 1) {
       setHistoryStack((prev) => [...prev, safeIndex]);
       setActiveQuestionIndex(safeIndex + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Completed all applicable questions
-      setIsCompleted(true);
+      // Completed all applicable questions -> move directly to Results
+      setViewMode('results');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   // Handle Back button
   const handleBack = () => {
-    if (historyStack.length === 0) return;
     setValidationError(null);
-    const prevIndex = historyStack[historyStack.length - 1];
-    setHistoryStack((prev) => prev.slice(0, -1));
-    setActiveQuestionIndex(prevIndex);
+
+    // If at Question 1, back navigation returns to the welcome screen
+    if (safeIndex === 0 && historyStack.length === 0) {
+      setViewMode('intro');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (historyStack.length > 0) {
+      const prevIndex = historyStack[historyStack.length - 1];
+      setHistoryStack((prev) => prev.slice(0, -1));
+      setActiveQuestionIndex(prevIndex);
+    } else {
+      setActiveQuestionIndex(Math.max(0, safeIndex - 1));
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -117,27 +157,55 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
     }
   };
 
-  // Handle Restart Assessment
+  // Handle Restart Assessment from results or dialog
   const handleRestart = () => {
     assessmentService.clearSession();
     setAnswers({});
     setActiveQuestionIndex(0);
     setHistoryStack([]);
-    setIsCompleted(false);
+    setHasSavedSession(false);
     setValidationError(null);
     if (onClearCourseContext) {
       onClearCourseContext();
     }
+    setViewMode('intro');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle Change Answers from results
+  const handleChangeAnswers = () => {
+    setViewMode('assessment');
+    setActiveQuestionIndex(0);
+    setHistoryStack([]);
+    setValidationError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const isMr = language === 'mr';
+  const isHi = language === 'hi';
 
-  // If completed, render the results screen
-  if (isCompleted) {
+  // 1. INTRO / GET STARTED VIEW
+  if (viewMode === 'intro') {
+    return (
+      <div className="assessment-intro-wrapper" style={{ width: '100%', padding: '0.5rem 0' }}>
+        <CareerGuidanceIntro
+          hasSavedSession={hasSavedSession}
+          savedQuestionNumber={safeIndex + 1}
+          totalQuestions={totalQuestions}
+          onStart={handleStartFresh}
+          onResume={handleResume}
+          onRestartNew={handleStartFresh}
+          onNavigateToCounsellor={() => onNavigate && onNavigate(ROUTES.COUNSELLOR_SUPPORT)}
+        />
+      </div>
+    );
+  }
+
+  // 2. RESULTS VIEW
+  if (viewMode === 'results') {
     const resultsData = assessmentService.generateResults(answers);
     return (
-      <div className="assessment-screen" style={{ width: '100%', maxWidth: '960px', margin: '0 auto', paddingBottom: '3rem' }}>
+      <div className="assessment-results-wrapper" style={{ width: '100%', paddingBottom: '3.5rem' }}>
         <AssessmentResults
           results={resultsData}
           language={language}
@@ -146,13 +214,14 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
             if (onViewCourseDetails) onViewCourseDetails(cId);
             else if (onNavigate) onNavigate(ROUTES.COURSE_DETAIL);
           }}
+          onChangeAnswers={handleChangeAnswers}
           onRestart={handleRestart}
         />
       </div>
     );
   }
 
-  // Fallback if no questions are loaded yet
+  // 3. ONE-QUESTION-AT-A-TIME DISCOVERY ASSESSMENT VIEW
   if (!currentQuestion) {
     return null;
   }
@@ -190,7 +259,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
 
       {/* Navigation Controls Bar */}
       <nav
-        aria-label={language === 'hi' ? 'मूल्यांकन नेविगेशन' : isMr ? 'मूल्यांकन नेव्हिगेशन' : 'Assessment Navigation'}
+        aria-label={isHi ? 'मूल्यांकन नेविगेशन' : isMr ? 'मूल्यांकन नेव्हिगेशन' : 'Assessment Navigation'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -204,13 +273,14 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           size="md"
           icon={<ArrowLeft size={16} />}
           onClick={handleBack}
-          disabled={safeIndex === 0 && historyStack.length === 0}
           style={{
-            visibility: safeIndex === 0 && historyStack.length === 0 ? 'hidden' : 'visible',
-            minHeight: '44px',
+            minHeight: '46px',
+            padding: '0 1.25rem',
           }}
         >
-          {t('assessment.btnBack')}
+          {safeIndex === 0 && historyStack.length === 0
+            ? isHi ? 'शुरुआती पृष्ठ' : isMr ? 'प्रारंभिक पान' : 'Welcome Page'
+            : t('assessment.btnBack')}
         </Button>
 
         <Button
@@ -219,7 +289,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           icon={safeIndex === totalQuestions - 1 ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
           iconPosition="right"
           onClick={handleContinue}
-          style={{ minWidth: '160px', minHeight: '44px' }}
+          style={{ minWidth: '170px', minHeight: '46px', fontWeight: 700 }}
         >
           {safeIndex === totalQuestions - 1
             ? t('assessment.btnFinish')
@@ -236,7 +306,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
             zIndex: 100,
             display: 'flex',
             alignItems: 'center',
@@ -248,7 +318,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           <div
             style={{
               backgroundColor: 'var(--color-surface)',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--radius-lg, 12px)',
               padding: '1.75rem',
               maxWidth: '440px',
               width: '100%',
@@ -261,7 +331,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
                 style={{
                   width: '36px',
                   height: '36px',
-                  borderRadius: 'var(--radius-full)',
+                  borderRadius: '50%',
                   backgroundColor: 'var(--color-primary-subtle)',
                   color: 'var(--color-primary)',
                   display: 'flex',
@@ -296,11 +366,21 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
               {t('assessment.exitModalDesc')}
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <Button variant="outline" size="md" onClick={() => setShowExitModal(false)} style={{ minHeight: '44px' }}>
-                {language === 'hi' ? 'सत्र जारी रखें' : isMr ? 'सत्र सुरू ठेवा' : 'Continue Assessment'}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setShowExitModal(false)}
+                style={{ minHeight: '44px' }}
+              >
+                {isHi ? 'सत्र जारी रखें' : isMr ? 'सत्र सुरू ठेवा' : 'Continue Assessment'}
               </Button>
-              <Button variant="primary" size="md" onClick={handleConfirmExit} style={{ minHeight: '44px' }}>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleConfirmExit}
+                style={{ minHeight: '44px' }}
+              >
                 {t('assessment.btnSaveExit')}
               </Button>
             </div>
@@ -310,3 +390,5 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
     </div>
   );
 };
+
+export default AssessmentScreen;

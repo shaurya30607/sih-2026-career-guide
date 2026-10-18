@@ -23,25 +23,25 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
 }) => {
   const isMr = language === 'mr';
   const isHi = language === 'hi';
-  const progressPercent = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+  const progressPercent = Math.min(100, Math.round(((currentIndex + 1) / totalQuestions) * 100));
 
   const title = isHi
-    ? 'पारिवारिक करियर मार्गदर्शन'
+    ? 'करियर मार्गदर्शन'
     : isMr
-    ? 'कुटुंब करिअर मार्गदर्शन'
-    : 'Family Career Guidance';
+    ? 'करिअर मार्गदर्शन'
+    : 'Career Guidance';
 
   const badgeText = isHi
-    ? 'संवादात्मक मूल्यांकन · डेमो'
+    ? 'करियर खोज'
     : isMr
-    ? 'संवादी मूल्यांकन · प्रात्यक्षिक'
-    : 'Interactive Assessment · Demo';
+    ? 'करिअर शोध'
+    : 'Career Discovery';
 
   const subtitle = isHi
-    ? 'विद्यार्थी की रुचियों को समझें, प्राथमिकताओं की तुलना करें और मिलकर व्यावसायिक करियर के रास्ते खोजें।'
+    ? 'अपनी रुचियों और प्राथमिकताओं को समझें और अपने अनुकूल व्यावसायिक करियर के रास्ते खोजें।'
     : isMr
-    ? 'विद्यार्थ्याची आवड समजून घ्या, प्राधान्यांची तुलना करा आणि व्यावसायिक करिअरचे मार्ग एकत्र शोधा.'
-    : 'Understand interests, compare priorities, and explore vocational pathways together.';
+    ? 'आपल्या आवडी आणि प्राधान्यक्रम समजून घ्या आणि योग्य व्यावसायिक करिअरचे मार्ग शोधा.'
+    : 'Discover your interests and explore vocational career pathways suited to you.';
 
   const resolvedCategoryLabel =
     isHi && categoryLabel.hi
@@ -105,7 +105,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               alignItems: 'center',
               backgroundColor: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-full)',
+              borderRadius: 'var(--radius-full, 9999px)',
               padding: '2px',
               boxShadow: 'var(--shadow-sm)',
             }}
@@ -118,7 +118,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               onClick={() => onLanguageToggle('en')}
               style={{
                 padding: '0.3125rem 0.625rem',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-full, 9999px)',
                 border: 'none',
                 backgroundColor: language === 'en' ? 'var(--color-primary)' : 'transparent',
                 color: language === 'en' ? '#ffffff' : 'var(--color-text-secondary)',
@@ -135,7 +135,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               onClick={() => onLanguageToggle('mr')}
               style={{
                 padding: '0.3125rem 0.625rem',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-full, 9999px)',
                 border: 'none',
                 backgroundColor: language === 'mr' ? 'var(--color-primary)' : 'transparent',
                 color: language === 'mr' ? '#ffffff' : 'var(--color-text-secondary)',
@@ -152,7 +152,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               onClick={() => onLanguageToggle('hi')}
               style={{
                 padding: '0.3125rem 0.625rem',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-full, 9999px)',
                 border: 'none',
                 backgroundColor: language === 'hi' ? 'var(--color-primary)' : 'transparent',
                 color: language === 'hi' ? '#ffffff' : 'var(--color-text-secondary)',
@@ -172,7 +172,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
             size="sm"
             onClick={onExit}
             icon={<LogOut size={14} />}
-            style={{ color: 'var(--color-text-muted)' }}
+            style={{ color: 'var(--color-text-muted)', minHeight: '36px' }}
           >
             {isHi ? 'सहेजें और बाहर निकलें' : isMr ? 'जतन करा आणि बाहेर पडा' : 'Save & Exit'}
           </Button>
@@ -184,7 +184,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
         style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-md)',
+          borderRadius: 'var(--radius-md, 8px)',
           padding: '0.875rem 1.25rem',
           boxShadow: 'var(--shadow-sm)',
         }}
@@ -208,7 +208,9 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
                 fontSize: '0.75rem',
               }}
             >
-              {isHi || isMr
+              {isHi
+                ? `प्रश्न ${currentIndex + 1} / ${totalQuestions}`
+                : isMr
                 ? `प्रश्न ${currentIndex + 1} / ${totalQuestions}`
                 : `Question ${currentIndex + 1} of ${totalQuestions}`}
             </span>
@@ -219,7 +221,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
           </div>
 
           <span style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-            {progressPercent}% {isHi || isMr ? 'पूर्ण' : 'completed'}
+            {progressPercent}% {isHi ? 'पूर्ण' : isMr ? 'पूर्ण' : 'completed'}
           </span>
         </div>
 
@@ -231,9 +233,9 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
           aria-valuemax={100}
           aria-label={isHi ? 'मूल्यांकन प्रगति' : isMr ? 'मूल्यांकन प्रगती' : 'Assessment progress'}
           style={{
-            height: '7px',
-            backgroundColor: 'var(--color-surface-muted)',
-            borderRadius: 'var(--radius-full)',
+            height: '8px',
+            backgroundColor: 'var(--color-surface-muted, #f1f5f9)',
+            borderRadius: 'var(--radius-full, 9999px)',
             overflow: 'hidden',
           }}
         >
@@ -242,7 +244,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               height: '100%',
               width: `${progressPercent}%`,
               backgroundColor: 'var(--color-primary)',
-              borderRadius: 'var(--radius-full)',
+              borderRadius: 'var(--radius-full, 9999px)',
               transition: 'width 250ms ease-in-out',
             }}
           />

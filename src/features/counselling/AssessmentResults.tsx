@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
-  TrendingUp,
+  Compass,
   Clock,
   Briefcase,
   Users,
@@ -9,20 +9,31 @@ import {
   UserCheck,
   RotateCcw,
   BookOpen,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  ShieldCheck,
+  Edit3,
 } from 'lucide-react';
-import { AssessmentLanguage, AssessmentResultsData } from './assessmentTypes';
-import { Course } from '../../types/course';
+import { AssessmentLanguage, AssessmentResultsData, LocalizedString } from './assessmentTypes';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { CounsellorRequestForm } from './CounsellorRequestForm';
-import { ASSESSMENT_QUESTIONS } from './assessmentQuestions';
 
 export interface AssessmentResultsProps {
   results: AssessmentResultsData;
   language: AssessmentLanguage;
   onExploreCourses: () => void;
   onViewCourseDetails: (courseId: string) => void;
+  onChangeAnswers: () => void;
   onRestart: () => void;
+}
+
+function resolveLocalized(loc: LocalizedString | undefined, lang: AssessmentLanguage): string {
+  if (!loc) return '';
+  if (lang === 'hi' && loc.hi) return loc.hi;
+  if (lang === 'mr' && loc.mr) return loc.mr;
+  return loc.en || loc.mr || '';
 }
 
 export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
@@ -30,489 +41,680 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   language,
   onExploreCourses,
   onViewCourseDetails,
+  onChangeAnswers,
   onRestart,
 }) => {
   const isMr = language === 'mr';
   const isHi = language === 'hi';
   const [showCounsellorModal, setShowCounsellorModal] = useState<boolean>(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState<boolean>(false);
 
-  // Confidence label mapping
-  const confidenceLabels: Record<number, { en: string; mr: string; hi: string }> = {
-    1: { en: 'Undecided / Exploring', mr: 'अजून निश्चित नाही / शोध सुरू', hi: 'अभी अनिश्चित / खोज जारी' },
-    2: { en: 'Initial Ideas / Exploring', mr: 'पर्यायांचा विचार सुरू', hi: 'शुरुआती विचार / अन्वेषण' },
-    3: { en: 'Moderate Clarity', mr: 'काही अंशी स्पष्टता', hi: 'मध्यम स्पष्टता' },
-    4: { en: 'High Clarity / Narrowed Down', mr: 'जवळपास निश्चित', hi: 'काफी स्पष्ट / विकल्प तय' },
-    5: { en: 'Very Clear & Ready', mr: 'पूर्णपणे ठाम व तयार', hi: 'पूरी तरह स्पष्ट और तैयार' },
-  };
-
-  const confidenceEntry = confidenceLabels[results.confidenceScore] || confidenceLabels[3];
-  const confidenceText = isHi ? confidenceEntry.hi : isMr ? confidenceEntry.mr : confidenceEntry.en;
-
-  // Resolve localized concern label
-  const concernQuestion = ASSESSMENT_QUESTIONS.find((q) => q.id === 'q_concern');
-  const concernOption = concernQuestion?.options?.find((o) => o.id === results.primaryConcernId);
-  const localizedConcernLabel = concernOption
-    ? (isHi && concernOption.label.hi ? concernOption.label.hi : isMr ? concernOption.label.mr : concernOption.label.en)
-    : results.primaryConcernLabel;
+  const recommendations = results.recommendations || [];
+  const summary = results.summary;
 
   return (
-    <div className="assessment-results-view" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Top Banner / Hero */}
+    <div
+      className="career-discovery-results-view"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2.25rem',
+        width: '100%',
+        maxWidth: '920px',
+        margin: '0 auto',
+      }}
+    >
+      {/* ========================================================
+          SECTION A — Heading and Reassurance
+         ======================================================== */}
       <section
         style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '2rem',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '2.25rem 2rem',
           boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.875rem', flexWrap: 'wrap' }}>
           <Badge variant="primary" size="md">
-            <Sparkles size={13} aria-hidden="true" style={{ marginRight: '4px' }} />
-            <span>{isHi ? 'मूल्यांकन निष्कर्ष रिपोर्ट' : isMr ? 'मूल्यांकन निष्कर्ष अहवाल' : 'Assessment Guidance Summary'}</span>
+            <Sparkles size={14} aria-hidden="true" style={{ marginRight: '5px' }} />
+            <span>{isHi ? 'करियर खोज परिणाम' : isMr ? 'करिअर शोध निकाल' : 'Career Discovery Results'}</span>
           </Badge>
           <Badge variant="neutral" size="sm">
-            <span>{isHi ? 'प्रोटोटाइप मार्गदर्शन मीट्रिक' : isMr ? 'प्रोटोटाइप मार्गदर्शक निकाल' : 'Prototype Guidance Metric'}</span>
+            <span>{isHi ? 'प्रासंगिक सुझाव' : isMr ? 'उपयुक्त शिफारशी' : 'Personalized Suggestions'}</span>
           </Badge>
         </div>
 
         <h1
           style={{
-            fontSize: '1.75rem',
+            fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)',
             fontWeight: 800,
             color: 'var(--color-text-primary)',
-            letterSpacing: '-0.02em',
-            margin: '0 0 0.5rem 0',
+            letterSpacing: '-0.025em',
+            margin: '0 0 0.625rem 0',
+            lineHeight: 1.25,
           }}
         >
           {isHi
-            ? 'आपके परिवार के लिए तैयार करियर रोडमैप'
+            ? 'आपके करियर खोज परिणाम'
             : isMr
-            ? 'आपल्या कुटुंबासाठी तयार केलेले करिअर मार्गदर्शन'
-            : 'Tailored Family Career Roadmap'}
+            ? 'तुमचे करिअर शोध निकाल'
+            : 'Your Career Discovery Results'}
         </h1>
 
         <p
           style={{
-            fontSize: '0.9375rem',
+            fontSize: '1rem',
             color: 'var(--color-text-secondary)',
             margin: 0,
             maxWidth: '740px',
-            lineHeight: 1.5,
+            lineHeight: 1.6,
           }}
         >
           {isHi
-            ? 'आपके उत्तरों के अनुसार विद्यार्थी की रुचि, परिवार की स्थिरता और सरकारी मान्यता के आधार पर तैयार मार्गदर्शन रिपोर्ट नीचे दी गई है।'
+            ? 'आपके उत्तर करियर की खोज के लिए एक शुरुआती बिंदु प्रदान करते हैं। ये सुझाव तलाशने के लिए संभावित विकल्प हैं, आपके भविष्य के बारे में कोई अंतिम निर्णय नहीं।'
             : isMr
-            ? 'आपल्या उत्तरांनुसार विद्यार्थ्याची आवड, कुटुंबाची सुरक्षिततेची गरज आणि शासकीय मान्यता या सर्वांचा समतोल साधणारा अहवाल खाली दिला आहे.'
-            : 'Based on your shared answers, here is a balanced summary connecting student interests with family stability, accredited qualifications, and verified trade pathways.'}
+            ? 'तुमची उत्तरे करिअर शोधण्यासाठी एक प्रारंभिक दिशा देतात. या शिफारशी पडताळणी करण्यासाठीचे पर्याय आहेत, तुमच्या भविष्याबद्दलचा अंतिम निर्णय नाही.'
+            : 'Your answers give us a starting point for exploring careers. These suggestions are possibilities to investigate, not a final decision about your future.'}
         </p>
 
-        <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Button variant="primary" size="md" icon={<BookOpen size={16} />} onClick={onExploreCourses}>
-            {isHi ? 'मैच किए गए कोर्स देखें' : isMr ? 'सर्व कोर्सेस एक्सप्लोर करा' : 'Explore Matched Courses'}
-          </Button>
-          <Button
-            variant="outline"
-            size="md"
-            icon={<UserCheck size={16} />}
-            onClick={() => setShowCounsellorModal(true)}
-          >
-            {isHi ? 'विशेषज्ञ काउंसलर से बात करें' : isMr ? 'तज्ज्ञ समुपदेशकांशी संपर्क साधा' : 'Talk to a Human Counsellor'}
-          </Button>
-          <Button variant="ghost" size="md" icon={<RotateCcw size={14} />} onClick={onRestart}>
-            {isHi ? 'मूल्यांकन पुनः शुरू करें' : isMr ? 'मूल्यांकन पुन्हा सुरू करा' : 'Restart Assessment'}
-          </Button>
-        </div>
-      </section>
-
-      {/* Grid of Key Learnings & Family Profile */}
-      <section>
-        <h2
-          style={{
-            fontSize: '1.125rem',
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-            marginBottom: '1rem',
-          }}
-        >
-          {isHi ? 'आपके सत्र से मिले मुख्य बिंदु' : isMr ? 'आम्हाला समजलेले मुख्य मुद्दे' : 'What We Learned From Your Session'}
-        </h2>
-
+        {/* Quick reassuring badges */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '1rem',
+            display: 'flex',
+            gap: '0.875rem',
+            flexWrap: 'wrap',
+            marginTop: '1.25rem',
+            paddingTop: '1.25rem',
+            borderTop: '1px solid var(--color-border-subtle)',
           }}
         >
-          {/* Card 1: Technical Streams & Interests */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isHi ? 'रुचि के क्षेत्र' : isMr ? 'रस असणारी क्षेत्रे' : 'Interest Sectors'}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginTop: '0.5rem' }}>
-              {results.interestStreams.length > 0 ? (
-                results.interestStreams.map((s) => (
-                  <Badge key={s} variant="primary" size="sm">
-                    {s.replace(/_/g, ' ').toUpperCase()}
-                  </Badge>
-                ))
-              ) : (
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-                  {isHi ? 'सभी प्रमुख क्षेत्रों पर विचार जारी' : isMr ? 'सर्व क्षेत्रांचा विचार सुरू' : 'Open to high-demand sectors'}
-                </span>
-              )}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+            <CheckCircle2 size={15} style={{ color: 'var(--color-success)' }} />
+            <span>{isHi ? 'कोई बाध्यता नहीं' : isMr ? 'कोणतेही बंधन नाही' : 'No forced decisions'}</span>
           </div>
-
-          {/* Card 2: Core Family Concern */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isHi ? 'परिवार की मुख्य प्राथमिकता' : isMr ? 'कुटुंबाची मुख्य प्राथमिकता' : 'Principal Family Concern'}
-            </div>
-            <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-              {localizedConcernLabel}
-            </div>
-            {results.deepDiveAnswer && (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
-                {isHi ? 'दर्ज की गई अपेक्षा:' : isMr ? 'नोंदवलेली अपेक्षा:' : 'Recorded specification:'}{' '}
-                <strong>
-                  {typeof results.deepDiveAnswer === 'number'
-                    ? `₹${results.deepDiveAnswer.toLocaleString('en-IN')} ${isHi ? '/ माह' : isMr ? '/ महिना' : '/ mo'}`
-                    : String(results.deepDiveAnswer).replace(/_/g, ' ')}
-                </strong>
-              </div>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+            <ShieldCheck size={15} style={{ color: 'var(--color-primary)' }} />
+            <span>{isHi ? 'प्रमाणित NSQF वोकेशनल कोर्स' : isMr ? 'NCVET प्रमाणित व्यावसायिक अभ्यासक्रम' : 'Aligned to NSQF standards'}</span>
           </div>
-
-          {/* Card 3: Confidence Score */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isHi ? 'करियर आत्मविश्वास सूचकांक' : isMr ? 'करिअर आत्मविश्वास पातळी' : 'Student Confidence Index'}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
-                {results.confidenceScore} / 5
-              </span>
-              <span style={{ fontSize: '0.875rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-                ({confidenceText})
-              </span>
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.375rem' }}>
-              {isHi
-                ? 'पारिवारिक बातचीत से स्पष्टता और आत्मविश्वास बढ़ता है'
-                : isMr
-                ? 'योग्य चर्चेमुळे आत्मविश्वास वाढू शकतो'
-                : 'Structured family dialogue builds clarity'}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+            <Compass size={15} style={{ color: 'var(--color-secondary)' }} />
+            <span>{isHi ? 'अपनी गति से खोजें' : isMr ? 'आपल्या गतीने शोधा' : 'Explore at your own pace'}</span>
           </div>
         </div>
       </section>
 
-      {/* Recommended Vocational Courses */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-              {isHi ? 'अनुशंसित मान्यताप्राप्त कोर्सेज' : isMr ? 'शिफारस केलेले अधिकृत कोर्सेस' : 'Recommended Accredited Courses'}
-            </h2>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0 0 0' }}>
-              {isHi
-                ? 'आपकी रुचियों और प्राथमिकताओं के आधार पर सरकारी मान्यता (NCVET) प्राप्त कोर्स'
-                : isMr
-                ? 'आपल्या आवडी आणि पात्रतेनुसार शासकीय मान्यताप्राप्त (NCVET) कोर्सेस'
-                : 'Selected from the SkillSaathi catalogue based on your stated interests and priorities'}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={onExploreCourses} icon={<ArrowRight size={14} />}>
-            {isHi ? 'पूरा कैटलॉग देखें' : isMr ? 'कॅटलॉग पहा' : 'View Full Catalogue'}
-          </Button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-          {results.recommendedCourses.map((course: Course) => (
-            <div
-              key={course.id}
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '1.5rem',
-                boxShadow: 'var(--shadow-sm)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '1rem',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                  <Badge variant="primary" size="sm">
-                    {course.stream.replace(/_/g, ' ').toUpperCase()}
-                  </Badge>
-                  <Badge variant="neutral" size="sm">
-                    NSQF Level {course.nsqfLevel}
-                  </Badge>
-                  <Badge variant="secondary" size="sm">
-                    {course.certificationBody}
-                  </Badge>
-                </div>
-
-                <h3
-                  style={{
-                    fontSize: '1.0625rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text-primary)',
-                    marginBottom: '0.5rem',
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {course.title}
-                </h3>
-
-                <p
-                  style={{
-                    fontSize: '0.8125rem',
-                    color: 'var(--color-text-secondary)',
-                    lineHeight: 1.45,
-                    marginBottom: '0.875rem',
-                  }}
-                >
-                  {course.description}
-                </p>
-
-                {/* Practical Skills Acquired */}
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.375rem' }}>
-                    {isHi ? 'सिखाए जाने वाले प्रैक्टिकल कौशल:' : isMr ? 'शिकवली जाणारी प्रत्यक्ष कौशल्ये:' : 'Key Hands-on Skills:'}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                    {(course.skillsAcquired || course.highlights || []).slice(0, 3).map((skill: string, sIdx: number) => (
-                      <span
-                        key={sIdx}
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '2px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: 'var(--color-bg)',
-                          border: '1px solid var(--color-border-subtle)',
-                          color: 'var(--color-text-secondary)',
-                        }}
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Career Outcome */}
-                <div
-                  style={{
-                    backgroundColor: 'var(--color-primary-subtle)',
-                    padding: '0.625rem 0.875rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.8125rem',
-                    color: 'var(--color-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <Briefcase size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
-                  <span>
-                    <strong>{isHi ? 'संभावित पद:' : isMr ? 'संभाव्य पद:' : 'Target Job Role:'}</strong>{' '}
-                    {course.careerOutcome.roleTitle}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid var(--color-border-subtle)',
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-text-muted)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <Clock size={14} aria-hidden="true" />
-                  <span>
-                    {course.durationMonths} {isHi ? 'महीने' : isMr ? 'महिने' : 'Months'} ({course.trainingMode})
-                  </span>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onViewCourseDetails(course.id)}
-                  style={{ fontSize: '0.75rem' }}
-                >
-                  {isHi ? 'विवरण देखें' : isMr ? 'तपशील पहा' : 'View Details'}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Family Discussion Guide */}
+      {/* ========================================================
+          SECTION B — Brief Interests Summary FIRST
+         ======================================================== */}
       <section
         style={{
           backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '1.75rem',
+          border: '1.5px solid var(--color-primary-subtle, #bfdbfe)',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '2rem',
           boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1rem' }}>
           <div
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-full)',
-              backgroundColor: 'var(--color-secondary-subtle)',
-              color: 'var(--color-secondary)',
+              width: '34px',
+              height: '34px',
+              borderRadius: 'var(--radius-md, 8px)',
+              backgroundColor: 'var(--color-primary-subtle, #eff6ff)',
+              color: 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
-            <Users size={18} aria-hidden="true" />
+            <Compass size={18} aria-hidden="true" />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-              {isHi ? 'परिवार के लिए चर्चा गाइड' : isMr ? 'कुटुंबासाठी चर्चा मार्गदर्शक' : 'Student-Parent Discussion Prompts'}
+            <h2
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                color: 'var(--color-text-primary)',
+                letterSpacing: '-0.015em',
+                margin: 0,
+              }}
+            >
+              {isHi
+                ? 'आपकी रुचियों और प्राथमिकताओं का सारांश'
+                : isMr
+                ? 'तुमच्या आवडी आणि प्राधान्यांचा सारांश'
+                : 'Your Interests & Profile Summary'}
             </h2>
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
               {isHi
-                ? 'विद्यार्थी की आकांक्षाओं और पारिवारिक सुरक्षा के समन्वय हेतु इन बिंदुओं पर चर्चा करें'
+                ? 'आपके द्वारा चुने गए उत्तरों के आधार पर तैयार संक्षिप्त निष्कर्ष'
                 : isMr
-                ? 'घरी निर्णय घेताना विद्यार्थी आणि पालकांनी एकत्र बसून या मुद्यांवर चर्चा करावी'
-                : 'Use these neutral prompts to align student aspirations with family security'}
+                ? 'तुम्ही नोंदवलेल्या उत्तरांनुसार तयार केलेला संक्षिप्त आढावा'
+                : 'Synthesised from what you shared during the assessment'}
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          {results.discussionPoints.map((pt, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                backgroundColor: 'var(--color-bg)',
-                padding: '0.875rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--color-border-subtle)',
-              }}
-            >
-              <span
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--color-primary)',
-                  color: '#ffffff',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  marginTop: '1px',
-                }}
-              >
-                {idx + 1}
-              </span>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-primary)', lineHeight: 1.5 }}>
-                {isHi && pt.hi ? pt.hi : isMr ? pt.mr : pt.en}
-              </p>
+        {/* Narrative Sentences */}
+        <div
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            border: '1px solid var(--color-border-subtle)',
+            borderRadius: 'var(--radius-lg, 12px)',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          {summary && summary.sentences.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {summary.sentences.map((sent, idx) => (
+                <p
+                  key={idx}
+                  style={{
+                    margin: 0,
+                    fontSize: '0.9375rem',
+                    color: 'var(--color-text-primary)',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {resolveLocalized(sent, language)}
+                </p>
+              ))}
             </div>
-          ))}
+          ) : (
+            <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--color-text-primary)', lineHeight: 1.6 }}>
+              {isHi
+                ? 'आप व्यावहारिक कार्यों में रुचि रखते हैं और हाथों से काम करके सीखना पसंद करते हैं। आप नौकरी की स्थिरता और स्पष्ट करियर पथ को प्राथमिकता देते हैं।'
+                : isMr
+                ? 'तुम्हाला प्रत्यक्ष कृती करणे आणि साधने वापरून शिकणे आवडते. तुम्ही नोकरीची स्थिरता आणि स्पष्ट करिअर प्रगतीला प्राधान्य देता.'
+                : 'You enjoy practical, hands-on activities and prefer learning by doing rather than theory alone. You value job stability and clear career progression.'}
+            </p>
+          )}
         </div>
+
+        {/* Selected Highlight Chips / Tags */}
+        {summary && summary.tags.length > 0 && (
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.04em' }}>
+              {isHi ? 'पहचाने गए मुख्य बिंदु:' : isMr ? 'महत्त्वाचे पैलू:' : 'Identified Profile Attributes:'}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {summary.tags.map((tag, tIdx) => (
+                <Badge key={tIdx} variant="secondary" size="md">
+                  {resolveLocalized(tag, language)}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Suggested Actionable Next Steps */}
+      {/* ========================================================
+          SECTION C — Suggested Career Paths IMMEDIATELY AFTER Summary
+         ======================================================== */}
+      <section>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginBottom: '1.25rem',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.25rem' }}>
+              {isHi ? 'मिलान किए गए विकल्प' : isMr ? 'जुळणारे पर्याय' : 'Matched Pathways'}
+            </div>
+            <h2
+              style={{
+                fontSize: '1.5rem',
+                fontWeight: 800,
+                color: 'var(--color-text-primary)',
+                letterSpacing: '-0.02em',
+                margin: 0,
+              }}
+            >
+              {isHi
+                ? 'तलाशने के लिए करियर मार्ग'
+                : isMr
+                ? 'पडताळणीसाठी करिअर मार्ग'
+                : 'Career Paths to Explore'}
+            </h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0 0 0' }}>
+              {isHi
+                ? 'स्किलसाथी कैटलॉग से आपके उत्तरों के आधार पर सुझाई गई व्यावसायिक शाखाएं'
+                : isMr
+                ? 'स्किलसाथी कॅटलॉगमधून तुमच्या उत्तरांनुसार सुचवलेले व्यावसायिक कोर्सेस'
+                : 'Accredited vocational options aligned to your selected interests and preferences'}
+            </p>
+          </div>
+
+          <Button variant="outline" size="sm" onClick={onExploreCourses} icon={<ArrowRight size={14} />}>
+            {isHi ? 'पूरा कैटलॉग देखें' : isMr ? 'सर्व कोर्सेस पहा' : 'Browse All Courses'}
+          </Button>
+        </div>
+
+        {/* Recommendation Cards */}
+        {recommendations.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {recommendations.map((rec, idx) => {
+              const { course, matchReason, skillsTaught, jobRoles, durationAndMode, eligibility, whatToVerify } = rec;
+
+              return (
+                <div
+                  key={course.id || idx}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-xl, 16px)',
+                    padding: '1.75rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.125rem',
+                  }}
+                >
+                  {/* Top Bar: Sector, NSQF, Certification */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Badge variant="primary" size="sm">
+                        {course.stream.replace(/_/g, ' ').toUpperCase()}
+                      </Badge>
+                      <Badge variant="neutral" size="sm">
+                        NSQF Level {course.nsqfLevel}
+                      </Badge>
+                      <Badge variant="secondary" size="sm">
+                        {course.certificationBody}
+                      </Badge>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                      <Clock size={14} aria-hidden="true" />
+                      <span>{durationAndMode}</span>
+                    </div>
+                  </div>
+
+                  {/* Course Title */}
+                  <h3
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      color: 'var(--color-text-primary)',
+                      letterSpacing: '-0.015em',
+                      margin: 0,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {course.title}
+                  </h3>
+
+                  {/* 1. Why this was suggested */}
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-primary-subtle, #eff6ff)',
+                      borderLeft: '4px solid var(--color-primary)',
+                      borderRadius: '0 var(--radius-md, 8px) var(--radius-md, 8px) 0',
+                      padding: '0.75rem 1rem',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                      {isHi ? 'यह विकल्प क्यों सुझाया गया:' : isMr ? 'हा पर्याय का सुचवला:' : 'Why this option was suggested:'}
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-primary)', lineHeight: 1.5 }}>
+                      {resolveLocalized(matchReason, language)}
+                    </p>
+                  </div>
+
+                  {/* 2. Skills Taught */}
+                  {skillsTaught && skillsTaught.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.375rem' }}>
+                        {isHi ? 'सिखाए जाने वाले व्यावहारिक कौशल:' : isMr ? 'शिकवली जाणारी प्रत्यक्ष कौशल्ये:' : 'Key Hands-on Skills Taught:'}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                        {skillsTaught.map((skill, sIdx) => (
+                          <span
+                            key={sIdx}
+                            style={{
+                              fontSize: '0.8125rem',
+                              padding: '3px 10px',
+                              borderRadius: 'var(--radius-sm, 6px)',
+                              backgroundColor: 'var(--color-bg)',
+                              border: '1px solid var(--color-border-subtle)',
+                              color: 'var(--color-text-secondary)',
+                            }}
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Job Roles & Eligibility Details Grid */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                      gap: '0.875rem',
+                      padding: '0.875rem 1rem',
+                      borderRadius: 'var(--radius-md, 8px)',
+                      backgroundColor: 'var(--color-bg)',
+                      border: '1px solid var(--color-border-subtle)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                        {isHi ? 'संभावित रोजगार पद:' : isMr ? 'संभाव्य नोकरी पदे:' : 'Possible Job Roles:'}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <Briefcase size={14} style={{ color: 'var(--color-primary)' }} />
+                        <span>{jobRoles}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                        {isHi ? 'पात्रता:' : isMr ? 'पात्रता निकष:' : 'Eligibility:'}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                        {eligibility}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. What the user should verify */}
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-surface-muted, #f8fafc)',
+                      border: '1px solid var(--color-border-subtle)',
+                      borderRadius: 'var(--radius-md, 8px)',
+                      padding: '0.75rem 1rem',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.625rem',
+                    }}
+                  >
+                    <AlertCircle size={16} style={{ color: 'var(--color-secondary)', flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>
+                        {isHi ? 'दाखिले से पहले क्या जांचें:' : isMr ? 'प्रवेशापूर्वी काय तपासावे:' : 'What you should verify:'}
+                      </strong>{' '}
+                      {resolveLocalized(whatToVerify, language)}
+                    </div>
+                  </div>
+
+                  {/* Card Action Buttons */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem',
+                      paddingTop: '0.75rem',
+                      borderTop: '1px solid var(--color-border-subtle)',
+                    }}
+                  >
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => onViewCourseDetails(course.id)}
+                      icon={<BookOpen size={16} />}
+                      style={{ minHeight: '44px' }}
+                    >
+                      {isHi ? 'कोर्स का विवरण देखें' : isMr ? 'कोर्स तपशील पहा' : 'View Course Details'}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={() => setShowCounsellorModal(true)}
+                      icon={<Users size={15} />}
+                      style={{ minHeight: '44px' }}
+                    >
+                      {isHi ? 'काउंसलर से इस पर चर्चा करें' : isMr ? 'समुपदेशकांशी चर्चा करा' : 'Discuss with a Counsellor'}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: '2rem',
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border)',
+              textAlign: 'center',
+            }}
+          >
+            <HelpCircle size={32} style={{ color: 'var(--color-text-muted)', marginBottom: '0.75rem' }} />
+            <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-secondary)', margin: '0 0 1rem 0' }}>
+              {isHi
+                ? 'आपकी रुचियों के आधार पर कोई विशिष्ट सीधा मिलान नहीं मिला, लेकिन पूरा कैटलॉग देखकर या काउंसलर से बात करके उपयुक्त विकल्प खोजे जा सकते हैं।'
+                : isMr
+                ? 'तुमच्या आवडींशी थेट जुळणारा एकही कोर्स सापडला नाही, परंतु संपूर्ण कॅटलॉग पाहून किंवा समुपदेशकांशी बोलून अधिक पर्याय शोधता येतील.'
+                : 'No single course matched all selected criteria exactly. Exploring our full catalogue or speaking with a counsellor can help identify promising avenues.'}
+            </p>
+            <Button variant="primary" size="md" onClick={onExploreCourses}>
+              {isHi ? 'सभी कोर्स देखें' : isMr ? 'सर्व कोर्सेस एक्सप्लोर करा' : 'Explore All Courses'}
+            </Button>
+          </div>
+        )}
+      </section>
+
+      {/* ========================================================
+          SECTION D — Next Steps
+         ======================================================== */}
       <section
         style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '1.75rem',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '2rem',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
         }}
       >
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.75rem' }}>
-          {isHi ? 'सुझाए गए अगले कदम' : isMr ? 'पुढील व्यावहारिक पावले' : 'Suggested Actionable Next Steps'}
-        </h2>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {results.nextSteps.map((step, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem' }}>
-              <TrendingUp size={16} style={{ color: 'var(--color-success)', flexShrink: 0 }} aria-hidden="true" />
-              <span style={{ color: 'var(--color-text-secondary)' }}>
-                {isHi && step.hi ? step.hi : isMr ? step.mr : step.en}
-              </span>
-            </div>
-          ))}
+        <div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 0.375rem 0' }}>
+            {isHi ? 'सुझाए गए अगले कदम' : isMr ? 'पुढील उपयुक्त पावले' : 'Suggested Next Steps'}
+          </h2>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+            {isHi
+              ? 'इन विकल्पों की समीक्षा करने या अपने उत्तरों को संशोधित करने के लिए नीचे दिए गए कदमों का उपयोग करें'
+              : isMr
+              ? 'हे पर्याय अधिक जाणून घेण्यासाठी किंवा उत्तरे बदलण्यासाठी खालील पर्यायांचा वापर करा'
+              : 'Choose how you would like to proceed with your career discovery'}
+          </p>
         </div>
 
+        {/* 4 Action Buttons */}
         <div
           style={{
-            marginTop: '1.25rem',
-            padding: '0.875rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'var(--color-surface-muted)',
-            fontSize: '0.75rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '0.875rem',
+          }}
+        >
+          <Button
+            variant="primary"
+            size="md"
+            icon={<BookOpen size={16} />}
+            onClick={onExploreCourses}
+            style={{ minHeight: '48px', justifyContent: 'center' }}
+          >
+            {isHi ? 'सभी कोर्स देखें' : isMr ? 'सर्व कोर्सेस पहा' : 'Explore All Courses'}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="md"
+            icon={<Edit3 size={16} />}
+            onClick={onChangeAnswers}
+            style={{ minHeight: '48px', justifyContent: 'center' }}
+          >
+            {isHi ? 'मेरे उत्तर बदलें' : isMr ? 'माझी उत्तरे बदला' : 'Change My Answers'}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="md"
+            icon={<UserCheck size={16} />}
+            onClick={() => setShowCounsellorModal(true)}
+            style={{ minHeight: '48px', justifyContent: 'center' }}
+          >
+            {isHi ? 'काउंसलर से बात करें' : isMr ? 'समुपदेशकांशी बोला' : 'Talk to a Counsellor'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="md"
+            icon={<RotateCcw size={16} />}
+            onClick={() => setShowRestartConfirm(true)}
+            style={{ minHeight: '48px', justifyContent: 'center', color: 'var(--color-text-secondary)' }}
+          >
+            {isHi ? 'फिर से शुरू करें' : isMr ? 'पुन्हा नव्याने सुरू करा' : 'Start Again'}
+          </Button>
+        </div>
+
+        {/* Honest Transparency Note */}
+        <div
+          style={{
+            padding: '1rem',
+            borderRadius: 'var(--radius-md, 8px)',
+            backgroundColor: 'var(--color-surface-muted, #f8fafc)',
+            border: '1px solid var(--color-border-subtle)',
+            fontSize: '0.8125rem',
             color: 'var(--color-text-muted)',
             lineHeight: 1.5,
           }}
         >
-          <strong>{isHi || isMr ? 'मार्गदर्शक सूचना:' : 'Transparency Note:'}</strong>{' '}
+          <strong style={{ color: 'var(--color-text-primary)' }}>
+            {isHi ? 'प्रोटोटाइप पारदर्शिता सूचना:' : isMr ? 'पारदर्शकता सूचना:' : 'Prototype Transparency Notice:'}
+          </strong>{' '}
           {isHi
-            ? 'ये परिणाम आपके उत्तरों पर आधारित परिचयात्मक सुझाव हैं, कोई नौकरी की कानूनी गारंटी नहीं। किसी भी संस्थान में प्रवेश से पहले उसकी आधिकारिक NCVET संबद्धता अवश्य जांचें।'
+            ? 'यह मूल्यांकन एक स्थानीय प्रोटोटाइप प्रदर्शन है, कोई मनोवैज्ञानिक परीक्षण या नौकरी की कानूनी गारंटी नहीं। कोर्स की फीस, सीटें और मान्यता प्रशिक्षण केंद्र से अवश्य सत्यापित करें।'
             : isMr
-            ? 'हे निकाल प्रात्यक्षिक नमुना सूचना आहेत, कोणतीही नोकरी हमी किंवा व्यावसायिक निदान नाही. कोणत्याही संस्थेत प्रवेश घेण्यापूर्वी प्रत्यक्ष NCVET मान्यता तपासा.'
-            : 'These recommendations are prototype algorithmic suggestions based on your responses, not guaranteed job contracts or clinical assessments. Always verify batch schedules, fee waivers, and affiliation with the respective vocational institute.'}
+            ? 'हे मूल्यांकन प्रात्यक्षिक नमुना सूचना आहे, कोणतीही नोकरी हमी किंवा वैद्यकीय चाचणी नाही. कोणत्याही संस्थेत प्रवेश घेण्यापूर्वी प्रत्यक्ष NCVET मान्यता व फी तपासून घ्या.'
+            : 'These recommendations are prototype discovery suggestions based on your responses, not guaranteed employment contracts or definitive clinical tests. Always verify batch timings, subsidies, and official affiliation directly with the training center.'}
         </div>
       </section>
+
+      {/* Restart Confirmation Dialog */}
+      {showRestartConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="restart-results-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            backdropFilter: 'blur(3px)',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg, 12px)',
+              padding: '1.75rem',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: 'var(--shadow-lg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-warning-subtle, #fef3c7)',
+                  color: 'var(--color-warning, #d97706)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <AlertCircle size={20} aria-hidden="true" />
+              </div>
+              <h2
+                id="restart-results-title"
+                style={{
+                  fontSize: '1.125rem',
+                  fontWeight: 700,
+                  color: 'var(--color-text-primary)',
+                  margin: 0,
+                }}
+              >
+                {isHi ? 'क्या नया मूल्यांकन शुरू करना चाहते हैं?' : isMr ? 'नवीन मूल्यांकन सुरू करायचे का?' : 'Start a new assessment?'}
+              </h2>
+            </div>
+
+            <p
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--color-text-secondary)',
+                lineHeight: 1.5,
+                marginBottom: '1.5rem',
+              }}
+            >
+              {isHi
+                ? 'इससे आपके पिछले मूल्यांकन के उत्तर साफ हो जाएंगे ताकि आप नए सिरे से शुरुआत कर सकें। सहेजे गए कोर्स या अन्य प्राथमिकताएं सुरक्षित रहेंगी।'
+                : isMr
+                ? 'यामुळे तुमची मागील मूल्यांकनाची उत्तरे काढून नव्याने सुरुवात होईल. सेव्ह केलेले कोर्सेस सुरक्षित राहतील.'
+                : 'This will reset your current assessment answers so you can start fresh. Saved courses and other application preferences will not be affected.'}
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setShowRestartConfirm(false)}
+                style={{ minHeight: '44px' }}
+              >
+                {isHi ? 'रद्द करें' : isMr ? 'रद्द करा' : 'Cancel'}
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  setShowRestartConfirm(false);
+                  onRestart();
+                }}
+                style={{ minHeight: '44px' }}
+              >
+                {isHi ? 'हाँ, नए सिरे से शुरू करें' : isMr ? 'होय, नव्याने सुरू करा' : 'Yes, Start Fresh'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Human Counsellor Escalation Modal */}
       <CounsellorRequestForm
         isOpen={showCounsellorModal}
         onClose={() => setShowCounsellorModal(false)}
         language={language}
-        courseTitle={results.recommendedCourses[0]?.title}
+        courseTitle={recommendations[0]?.course.title}
       />
     </div>
   );
