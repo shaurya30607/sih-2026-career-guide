@@ -4,6 +4,7 @@ import {
   AssessmentLanguage,
   AssessmentQuestion,
   AnswerValue,
+  LocalizedString,
 } from './assessmentTypes';
 import { Badge } from '../../components/common/Badge';
 
@@ -15,6 +16,13 @@ export interface QuestionRendererProps {
   validationError?: string | null;
 }
 
+function getLocalized(loc: LocalizedString | undefined, lang: AssessmentLanguage): string {
+  if (!loc) return '';
+  if (lang === 'hi' && loc.hi) return loc.hi;
+  if (lang === 'mr' && loc.mr) return loc.mr;
+  return loc.en || loc.mr || '';
+}
+
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   question,
   currentAnswer,
@@ -23,6 +31,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   validationError,
 }) => {
   const isMr = language === 'mr';
+  const isHi = language === 'hi';
 
   // Single Choice Handler
   const handleSingleSelect = (optionId: string) => {
@@ -52,6 +61,13 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     onAnswerChange(e.target.value);
   };
 
+  const selectedCount = Array.isArray(currentAnswer) ? currentAnswer.length : 0;
+  const multiLimitNotice = isHi
+    ? `अधिकतम ${question.maxSelections} विकल्प चुन सकते हैं (चुने गए: ${selectedCount}/${question.maxSelections})`
+    : isMr
+    ? `कमाल ${question.maxSelections} पर्याय निवडू शकता (निवडले: ${selectedCount}/${question.maxSelections})`
+    : `Select up to ${question.maxSelections} priorities (selected: ${selectedCount}/${question.maxSelections})`;
+
   return (
     <div
       className="question-renderer-card"
@@ -79,7 +95,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             marginBottom: '0.5rem',
           }}
         >
-          {isMr ? question.question.mr : question.question.en}
+          {getLocalized(question.question, language)}
         </h2>
 
         {question.description && (
@@ -91,7 +107,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               margin: 0,
             }}
           >
-            {isMr ? question.description.mr : question.description.en}
+            {getLocalized(question.description, language)}
           </p>
         )}
 
@@ -99,13 +115,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         {question.responseType === 'multiple_choice' && question.maxSelections && (
           <div style={{ marginTop: '0.625rem' }}>
             <Badge variant="neutral" size="sm">
-              {isMr
-                ? `कमाल ${question.maxSelections} पर्याय निवडू शकता (निवडले: ${
-                    Array.isArray(currentAnswer) ? currentAnswer.length : 0
-                  }/${question.maxSelections})`
-                : `Select up to ${question.maxSelections} priorities (selected: ${
-                    Array.isArray(currentAnswer) ? currentAnswer.length : 0
-                  }/${question.maxSelections})`}
+              {multiLimitNotice}
             </Badge>
           </div>
         )}
@@ -197,7 +207,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                         lineHeight: 1.4,
                       }}
                     >
-                      {isMr ? opt.label.mr : opt.label.en}
+                      {getLocalized(opt.label, language)}
                     </div>
                     {opt.description && (
                       <div
@@ -208,7 +218,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                           lineHeight: 1.4,
                         }}
                       >
-                        {isMr ? opt.description.mr : opt.description.en}
+                        {getLocalized(opt.description, language)}
                       </div>
                     )}
                   </div>
@@ -301,7 +311,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                         lineHeight: 1.35,
                       }}
                     >
-                      {isMr ? opt.label.mr : opt.label.en}
+                      {getLocalized(opt.label, language)}
                     </div>
                     {opt.description && (
                       <div
@@ -312,7 +322,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                           lineHeight: 1.35,
                         }}
                       >
-                        {isMr ? opt.description.mr : opt.description.en}
+                        {getLocalized(opt.description, language)}
                       </div>
                     )}
                   </div>
@@ -343,7 +353,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               {[1, 2, 3, 4, 5].map((score) => {
                 const isSelected = currentAnswer === score;
                 const labelObj = question.ratingConfig?.labels[score];
-                const scoreLabel = labelObj ? (isMr ? labelObj.mr : labelObj.en) : `Score ${score}`;
+                const scoreLabel = labelObj ? getLocalized(labelObj, language) : `Score ${score}`;
 
                 return (
                   <button
@@ -412,8 +422,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 padding: '0 0.25rem',
               }}
             >
-              <span>← {isMr ? 'कमी आत्मविश्वास / सुरुवात' : 'Least confident / Just starting'}</span>
-              <span>{isMr ? 'खूप स्पष्ट / तयार' : 'Very confident / Ready to start'} →</span>
+              <span>← {isHi ? 'कम आत्मविश्वास / शुरुआत' : isMr ? 'कमी आत्मविश्वास / सुरुवात' : 'Least confident / Just starting'}</span>
+              <span>{isHi ? 'पूर्णतः आश्वस्त / शुरुआत के लिए तैयार' : isMr ? 'खूप स्पष्ट / तयार' : 'Very confident / Ready to start'} →</span>
             </div>
           </div>
         )}
@@ -441,7 +451,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 ).toLocaleString('en-IN')}
               </span>
               <span style={{ fontSize: '0.9375rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                {question.numericConfig.suffix}
+                {isHi ? ' / माह' : isMr ? ' / महिना' : question.numericConfig.suffix}
               </span>
             </div>
 
@@ -453,7 +463,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               step={question.numericConfig.step}
               value={typeof currentAnswer === 'number' ? currentAnswer : question.numericConfig.defaultValue}
               onChange={handleNumericChange}
-              aria-label={isMr ? question.question.mr : question.question.en}
+              aria-label={getLocalized(question.question, language)}
               style={{
                 width: '100%',
                 cursor: 'pointer',
@@ -471,8 +481,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 fontWeight: 500,
               }}
             >
-              <span>{question.numericConfig.minLabel ? (isMr ? question.numericConfig.minLabel.mr : question.numericConfig.minLabel.en) : question.numericConfig.min}</span>
-              <span>{question.numericConfig.maxLabel ? (isMr ? question.numericConfig.maxLabel.mr : question.numericConfig.maxLabel.en) : question.numericConfig.max}</span>
+              <span>{question.numericConfig.minLabel ? getLocalized(question.numericConfig.minLabel, language) : question.numericConfig.min}</span>
+              <span>{question.numericConfig.maxLabel ? getLocalized(question.numericConfig.maxLabel, language) : question.numericConfig.max}</span>
             </div>
 
             {/* Benchmark Guidance Note */}
@@ -492,7 +502,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               >
                 <Info size={15} style={{ color: 'var(--color-primary)', flexShrink: 0 }} aria-hidden="true" />
                 <span>
-                  {isMr ? question.numericConfig.helperText.mr : question.numericConfig.helperText.en}
+                  {getLocalized(question.numericConfig.helperText, language)}
                 </span>
               </div>
             )}
@@ -511,9 +521,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             }}
           >
             {[
-              { id: 'yes', label: { en: 'Yes', mr: 'होय' } },
-              { id: 'no', label: { en: 'No', mr: 'नाही' } },
-              { id: 'unsure', label: { en: 'Not Sure', mr: 'निश्चित नाही' } },
+              { id: 'yes', label: { en: 'Yes', mr: 'होय', hi: 'हाँ' } },
+              { id: 'no', label: { en: 'No', mr: 'नाही', hi: 'नहीं' } },
+              { id: 'unsure', label: { en: 'Not Sure', mr: 'निश्चित नाही', hi: 'निश्चित नहीं' } },
             ].map((item) => {
               const isSelected = currentAnswer === item.id;
               return (
@@ -536,7 +546,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     transition: 'all 150ms ease',
                   }}
                 >
-                  {isMr ? item.label.mr : item.label.en}
+                  {getLocalized(item.label, language)}
                 </button>
               );
             })}
@@ -552,14 +562,14 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               onChange={handleTextChange}
               placeholder={
                 question.placeholder
-                  ? isMr
-                    ? question.placeholder.mr
-                    : question.placeholder.en
+                  ? getLocalized(question.placeholder, language)
+                  : isHi
+                  ? 'अपने विचार यहाँ लिखें...'
                   : isMr
                   ? 'आपले विचार येथे लिहा...'
                   : 'Enter your response here...'
               }
-              aria-label={isMr ? question.question.mr : question.question.en}
+              aria-label={getLocalized(question.question, language)}
               style={{
                 width: '100%',
                 padding: '0.875rem 1rem',
@@ -595,15 +605,19 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             >
               <span>
                 {question.required
-                  ? isMr
+                  ? isHi
+                    ? '* आवश्यक जानकारी'
+                    : isMr
                     ? '* आवश्यक माहिती'
                     : '* Required response'
+                  : isHi
+                  ? 'ऐच्छिक (खाली छोड़ सकते हैं)'
                   : isMr
                   ? 'ऐच्छिक (वगळू शकता)'
                   : 'Optional (may leave blank)'}
               </span>
               <span>
-                {typeof currentAnswer === 'string' ? currentAnswer.length : 0} {isMr ? 'अक्षरे' : 'characters'}
+                {typeof currentAnswer === 'string' ? currentAnswer.length : 0} {isHi ? 'अक्षर' : isMr ? 'अक्षरे' : 'characters'}
               </span>
             </div>
           </div>
@@ -630,3 +644,5 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     </div>
   );
 };
+
+export default QuestionRenderer;

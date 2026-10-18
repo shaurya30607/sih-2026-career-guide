@@ -8,65 +8,63 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { ROUTES } from '../../app/routes';
+import { SUPPORTED_LANGUAGES as I18N_SUPPORTED_LANGUAGES, LanguageOption } from '../../i18n';
 
 export interface NavItemConfig {
   id: string;
   label: string;
+  translationKey: string;
   route: string;
   icon: LucideIcon;
   badge?: string;
+  isAdmin?: boolean;
 }
 
 export const NAVIGATION_ITEMS: NavItemConfig[] = [
   {
     id: 'home',
     label: 'Home',
+    translationKey: 'nav.home',
     route: ROUTES.HOME,
     icon: Home,
   },
   {
     id: 'courses',
-    label: 'Explore Courses',
+    label: 'Find a Course',
+    translationKey: 'nav.findCourse',
     route: ROUTES.COURSES,
     icon: BookOpen,
   },
   {
     id: 'counselling',
-    label: 'AI Counsellor',
+    label: 'Family Career Guidance',
+    translationKey: 'nav.familyGuidance',
     route: ROUTES.COUNSELLING,
     icon: MessageSquareQuote,
-    badge: 'AI',
   },
   {
     id: 'career-pathways',
-    label: 'Career Pathways',
+    label: 'Career Options',
+    translationKey: 'nav.careerOptions',
     route: ROUTES.CAREER_PATHWAYS,
     icon: Route,
   },
   {
     id: 'counsellor-support',
-    label: 'Counsellor Support',
+    label: 'Talk to a Counsellor',
+    translationKey: 'nav.talkToCounsellor',
     route: ROUTES.COUNSELLOR_SUPPORT,
     icon: Users,
   },
   {
     id: 'admin',
     label: 'Admin Dashboard',
+    translationKey: 'nav.adminDashboard',
     route: ROUTES.ADMIN_DASHBOARD,
     icon: LayoutDashboard,
+    isAdmin: true,
   },
 ];
 
-export interface LanguageOption {
-  code: string;
-  label: string;
-}
-
-export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिन्दी (Hindi)' },
-  { code: 'mr', label: 'मराठी (Marathi)' },
-  { code: 'ta', label: 'தமிழ் (Tamil)' },
-  { code: 'te', label: 'తెలుగు (Telugu)' },
-  { code: 'bn', label: 'বাংলা (Bengali)' },
-];
+export { I18N_SUPPORTED_LANGUAGES as SUPPORTED_LANGUAGES };
+export type { LanguageOption };

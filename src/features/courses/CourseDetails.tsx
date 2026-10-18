@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Course } from '../../types/course';
 import { courseService, EDUCATION_LEVEL_LABELS } from '../../services/courses/courseService';
+import { useTranslation } from '../../i18n';
 
 export interface CourseDetailsProps {
   course: Course;
@@ -29,6 +30,9 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
   onBack,
   onConsultCounsellor,
 }) => {
+  const { t, language } = useTranslation();
+  const isMr = language === 'mr';
+  const isHi = language === 'hi';
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const streamMeta = courseService.getStreamMeta(course.stream);
 
@@ -41,8 +45,32 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
   };
 
   const formattedSalary = course.careerOutcome.averageStartingSalaryInr
-    ? `₹${course.careerOutcome.averageStartingSalaryInr.toLocaleString('en-IN')} / month`
-    : 'Regulated Stipend';
+    ? `₹${course.careerOutcome.averageStartingSalaryInr.toLocaleString('en-IN')} / ${isHi ? 'माह' : isMr ? 'महिना' : 'month'}`
+    : isHi ? 'नियमित मानदेय' : isMr ? 'नियमित मानधन' : 'Regulated Stipend';
+
+  const modeText = isHi
+    ? course.trainingMode === 'offline'
+      ? 'ऑफलाइन कार्यशाला'
+      : course.trainingMode === 'hybrid'
+      ? 'हाइब्रिड'
+      : 'ऑनलाइन'
+    : isMr
+    ? course.trainingMode === 'offline'
+      ? 'प्रत्यक्ष कार्यशाळा'
+      : course.trainingMode === 'hybrid'
+      ? 'हायब्रिड'
+      : 'ऑनलाइन'
+    : `${course.trainingMode} workshop`;
+
+  const minEduText = isHi
+    ? course.eligibility.minEducation === '10th_pass'
+      ? '१०वीं उत्तीर्ण (SSC)'
+      : '१२वीं उत्तीर्ण (HSC)'
+    : isMr
+    ? course.eligibility.minEducation === '10th_pass'
+      ? '१० वी उत्तीर्ण (SSC)'
+      : '१२ वी उत्तीर्ण (HSC)'
+    : EDUCATION_LEVEL_LABELS[course.eligibility.minEducation] || course.eligibility.minEducation;
 
   return (
     <div className="taste-dossier-wrapper">
@@ -52,30 +80,31 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           type="button"
           className="taste-back-btn"
           onClick={onBack}
+          style={{ minHeight: '44px' }}
         >
           <ArrowLeft size={16} />
-          Return to Course Register
+          {t('courses.backToRegister')}
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
             className={`taste-btn-primary ${isBookmarked ? 'taste-btn-accent' : ''}`}
-            style={{ padding: '8px 16px', fontSize: '0.875rem' }}
+            style={{ padding: '8px 16px', fontSize: '0.875rem', minHeight: '44px' }}
             onClick={() => onToggleBookmark(course.id)}
           >
             {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-            {isBookmarked ? 'Saved in List' : 'Save Qualification'}
+            {isBookmarked ? t('courses.removeSavedBtn') : t('courses.saveBtn')}
           </button>
 
           <button
             type="button"
             className="taste-stream-tab"
-            style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', minHeight: '44px' }}
             onClick={handleShare}
           >
             <Share2 size={15} />
-            {copiedLink ? 'Link Copied' : 'Share'}
+            {copiedLink ? t('common.linkCopied') : t('common.share')}
           </button>
         </div>
       </div>
@@ -98,7 +127,7 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           )}
           {course.financialAidAvailable && (
             <span className="taste-badge-cert" style={{ backgroundColor: '#ecfdf5', color: '#065f46' }}>
-              Fee Subsidy Available
+              {isHi ? 'शुल्क सब्सिडी उपलब्ध' : isMr ? 'शुल्क सवलत उपलब्ध' : 'Fee Subsidy Available'}
             </span>
           )}
         </div>
@@ -119,7 +148,7 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           </span>
           <span>·</span>
           <span>
-            {course.enrolledCount.toLocaleString()} enrolled candidates
+            {t('courses.enrolledCount', { count: course.enrolledCount.toLocaleString() })}
           </span>
         </div>
 
@@ -128,12 +157,13 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
             type="button"
             className="taste-btn-accent"
             onClick={() => onConsultCounsellor(course)}
+            style={{ minHeight: '44px' }}
           >
             <MessageSquareQuote size={18} />
-            Ask Counsellor About This Trade
+            {t('courses.askCounsellorBtn')}
           </button>
           <span style={{ fontSize: '0.875rem', color: 'var(--color-muted, #6a7186)' }}>
-            Review eligibility, family stability concerns, and state placement data.
+            {t('courses.askCounsellorSub')}
           </span>
         </div>
       </section>
@@ -141,40 +171,42 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
       {/* Quick Spec Matrix */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
         <div style={{ backgroundColor: 'var(--color-surface, #f4f4f2)', borderRadius: '8px', padding: '20px' }}>
-          <span className="taste-mini-label">Duration &amp; Format</span>
-          <p className="taste-mini-value" style={{ margin: '4px 0 2px 0' }}>{course.durationMonths} Months</p>
+          <span className="taste-mini-label">{t('courses.durationFormat')}</span>
+          <p className="taste-mini-value" style={{ margin: '4px 0 2px 0' }}>
+            {course.durationMonths} {isHi ? 'महीने' : isMr ? 'महिने' : 'Months'}
+          </p>
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)', textTransform: 'capitalize' }}>
-            {course.trainingMode} workshop
+            {modeText}
           </span>
         </div>
 
         <div style={{ backgroundColor: 'var(--color-surface, #f4f4f2)', borderRadius: '8px', padding: '20px' }}>
-          <span className="taste-mini-label">Eligibility Prerequisite</span>
+          <span className="taste-mini-label">{t('courses.eligibilityPrereq')}</span>
           <p className="taste-mini-value" style={{ margin: '4px 0 2px 0' }}>
-            {EDUCATION_LEVEL_LABELS[course.eligibility.minEducation] || course.eligibility.minEducation}
+            {minEduText}
           </p>
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)' }}>
-            Min age {course.eligibility.minAge} years
+            {t('courses.minAge', { age: course.eligibility.minAge })}
           </span>
         </div>
 
         <div style={{ backgroundColor: 'var(--color-surface, #f4f4f2)', borderRadius: '8px', padding: '20px' }}>
-          <span className="taste-mini-label">Practical Workshop Hours</span>
+          <span className="taste-mini-label">{t('courses.practicalHours')}</span>
           <p className="taste-mini-value" style={{ margin: '4px 0 2px 0' }}>
-            {course.practicalHours ? `${course.practicalHours} Hours` : 'Lab Intensive'}
+            {course.practicalHours ? t('courses.practicalHoursVal', { hours: course.practicalHours }) : (isHi ? 'प्रयोगशाला केंद्रित' : isMr ? 'प्रयोगशाळा केंद्रित' : 'Lab Intensive')}
           </p>
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)' }}>
-            Hands-on machine training
+            {t('courses.handsOnTraining')}
           </span>
         </div>
 
         <div style={{ backgroundColor: 'var(--color-surface, #f4f4f2)', borderRadius: '8px', padding: '20px' }}>
-          <span className="taste-mini-label">Industry Demand</span>
+          <span className="taste-mini-label">{t('courses.industryDemand')}</span>
           <p className="taste-mini-value accent" style={{ margin: '4px 0 2px 0', textTransform: 'capitalize' }}>
             {course.careerOutcome.industryDemand.replace('_', ' ')}
           </p>
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)' }}>
-            Statewide recruitment
+            {t('courses.activeHiring')}
           </span>
         </div>
       </div>
@@ -186,14 +218,14 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           {/* Syllabus Overview */}
           <div className="taste-dossier-panel">
             <h2 className="taste-dossier-section-title">
-              Technical Overview &amp; Curriculum
+              {t('courses.curriculumTitle')}
             </h2>
             <p style={{ fontSize: '0.9375rem', lineHeight: 1.6, color: 'var(--color-text-secondary, #3b4561)', margin: 0 }}>
               {course.description}
             </p>
 
             <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-ink, #1f2b4d)', margin: '16px 0 8px 0' }}>
-              Curriculum Modules
+              {t('courses.curriculumModules')}
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {course.highlights.map((h) => (
@@ -208,7 +240,7 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
             {course.skillsAcquired && course.skillsAcquired.length > 0 && (
               <div>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-ink, #1f2b4d)', margin: '16px 0 8px 0' }}>
-                  Practical Competencies Mastered
+                  {t('courses.competenciesMastered')}
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {course.skillsAcquired.map((skill) => (
@@ -231,7 +263,7 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <TrendingUp size={20} style={{ color: 'var(--color-accent, #f7941d)' }} aria-hidden="true" />
                 <h2 className="taste-dossier-section-title" style={{ margin: 0 }}>
-                  Career Progression &amp; Degree Bridge
+                  {t('courses.degreeBridgeTitle')}
                 </h2>
               </div>
 
@@ -249,8 +281,8 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
                   lineHeight: 1.5,
                 }}
               >
-                <strong>National Credit Framework (NCrF) Compliance: </strong>
-                Course credits deposit directly into your Academic Bank of Credits (ABC) to enable lateral entry into Year 2 of Polytechnic Diplomas and Bachelor of Vocation (B.Voc) degrees.
+                <strong>{isHi ? 'राष्ट्रीय क्रेडिट फ्रेमवर्क (NCrF) जानकारी: ' : isMr ? 'राष्ट्रीय क्रेडिट चौकट (NCrF) माहिती: ' : 'National Credit Framework (NCrF) Compliance: '}</strong>
+                {t('courses.degreeBridgeText')}
               </div>
             </div>
           )}
@@ -261,33 +293,33 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           {/* Economic Ledger Card */}
           <div className="taste-dossier-panel">
             <h2 className="taste-dossier-section-title">
-              Economic Outcome
+              {t('courses.economicOutcomeTitle')}
             </h2>
 
             <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', padding: '16px', marginBottom: '16px' }}>
-              <span className="taste-mini-label">Target Role</span>
+              <span className="taste-mini-label">{t('courses.targetRole')}</span>
               <p style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-ink, #1f2b4d)', margin: '4px 0 2px 0' }}>
                 {course.careerOutcome.roleTitle}
               </p>
               <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)' }}>
-                Direct placement upon certification
+                {t('courses.directPlacement')}
               </span>
             </div>
 
             <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', padding: '16px', marginBottom: '16px' }}>
-              <span className="taste-mini-label">Starting Remuneration / Stipend</span>
+              <span className="taste-mini-label">{t('courses.startingWageLabel')}</span>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent, #f7941d)', margin: '4px 0 2px 0' }}>
                 {formattedSalary}
               </p>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-muted, #6a7186)' }}>
-                Regulated apprenticeship scale under Apprentices Act
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-muted, #6a7186)', display: 'block', marginTop: '4px' }}>
+                {t('courses.stipendDisclaimer')}
               </span>
             </div>
 
             {/* Employers */}
             {course.careerOutcome.potentialEmployers && course.careerOutcome.potentialEmployers.length > 0 && (
               <div>
-                <span className="taste-mini-label">Industry Employers</span>
+                <span className="taste-mini-label">{t('courses.hiringPartners')}</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
                   {course.careerOutcome.potentialEmployers.map((emp) => (
                     <span
@@ -312,18 +344,18 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           {/* Family Dialogue Advisory Tile */}
           <div className="taste-dossier-highlight-card">
             <h3 className="taste-dossier-highlight-title">
-              Family Counselling Available
+              {t('courses.familyNoticeTitle')}
             </h3>
             <p className="taste-dossier-highlight-desc">
-              Have doubts about course credibility, hostel facilities, or career stability? SkillSaathi conducts guided joint family sessions in your regional language.
+              {t('courses.familyNoticeDesc')}
             </p>
             <button
               type="button"
               className="taste-btn-accent"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}
               onClick={() => onConsultCounsellor(course)}
             >
-              Start Joint Counselling
+              {t('courses.familyNoticeBtn')}
             </button>
           </div>
 
@@ -343,7 +375,7 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           >
             <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} aria-hidden="true" />
             <span>
-              All qualification standards, curricula, and apprenticeship norms are aligned with national NCVET guidelines.
+              {t('courses.transparencyNotice')}
             </span>
           </div>
         </div>
@@ -355,18 +387,20 @@ export const CourseDetails: React.FC<CourseDetailsProps> = ({
           type="button"
           className="taste-back-btn"
           onClick={onBack}
+          style={{ minHeight: '44px' }}
         >
           <ArrowLeft size={16} />
-          Return to Course Register
+          {t('courses.backToRegister')}
         </button>
 
         <button
           type="button"
           className="taste-btn-primary"
           onClick={() => onConsultCounsellor(course)}
+          style={{ minHeight: '44px' }}
         >
           <MessageSquareQuote size={16} />
-          Consult Counsellor
+          {t('courses.discussWithAI')}
         </button>
       </div>
     </div>

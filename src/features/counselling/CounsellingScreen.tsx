@@ -20,6 +20,7 @@ import { EvidencePanel } from './EvidencePanel';
 import { CounsellorRequestForm } from './CounsellorRequestForm';
 import { Button } from '../../components/common/Button';
 import { ROUTES } from '../../app/routes';
+import { useTranslation, SupportedLanguageCode } from '../../i18n';
 
 export interface CounsellingScreenProps {
   courseId?: string | null;
@@ -34,7 +35,8 @@ export const CounsellingScreen: React.FC<CounsellingScreenProps> = ({
   onClearCourseContext,
   onViewCourseDetails,
 }) => {
-  const [language, setLanguage] = useState<CounsellingLanguage>('en');
+  const { language: globalLang, changeLanguage } = useTranslation();
+  const [language, setLanguage] = useState<CounsellingLanguage>((globalLang as CounsellingLanguage) || 'en');
   const [perspective, setPerspective] = useState<CounsellingPerspective>('joint');
   const [course, setCourse] = useState<Course | null>(null);
   const [messages, setMessages] = useState<CounsellingMessage[]>([]);
@@ -43,6 +45,17 @@ export const CounsellingScreen: React.FC<CounsellingScreenProps> = ({
   const [showCounsellorModal, setShowCounsellorModal] = useState<boolean>(false);
 
   const ui = counsellingService.getUIText(language);
+
+  // Sync with global language selector
+  useEffect(() => {
+    if (globalLang && (globalLang === 'en' || globalLang === 'mr' || globalLang === 'hi')) {
+      setLanguage(globalLang as CounsellingLanguage);
+      if (messages.length === 1 && messages[0].senderRole === 'counsellor') {
+        const welcome = counsellingService.getInitialWelcomeMessage(perspective, globalLang as CounsellingLanguage, course);
+        setMessages([welcome]);
+      }
+    }
+  }, [globalLang, course, messages, perspective]);
 
   // Load course details if courseId is passed
   useEffect(() => {
@@ -73,6 +86,7 @@ export const CounsellingScreen: React.FC<CounsellingScreenProps> = ({
   // Handle language toggle
   const handleToggleLanguage = (newLang: CounsellingLanguage) => {
     setLanguage(newLang);
+    changeLanguage(newLang as SupportedLanguageCode);
     // If only the welcome message exists, update it to the new language
     if (messages.length === 1 && messages[0].senderRole === 'counsellor') {
       const welcome = counsellingService.getInitialWelcomeMessage(perspective, newLang, course);
@@ -226,7 +240,24 @@ export const CounsellingScreen: React.FC<CounsellingScreenProps> = ({
                   transition: 'background-color 150ms ease, color 150ms ease',
                 }}
               >
-                मराठी (Marathi)
+                मराठी
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage('hi')}
+                style={{
+                  padding: '0.3125rem 0.625rem',
+                  borderRadius: 'var(--radius-full)',
+                  border: 'none',
+                  backgroundColor: language === 'hi' ? 'var(--color-primary)' : 'transparent',
+                  color: language === 'hi' ? '#ffffff' : 'var(--color-text-secondary)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background-color 150ms ease, color 150ms ease',
+                }}
+              >
+                हिंदी
               </button>
             </div>
 
@@ -359,11 +390,11 @@ export const CounsellingScreen: React.FC<CounsellingScreenProps> = ({
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid',
                 borderColor:
-                  perspective === 'joint' ? '#6366f1' : 'var(--color-border)',
+                  perspective === 'joint' ? 'var(--color-primary, #1f2b4d)' : 'var(--color-border)',
                 backgroundColor:
-                  perspective === 'joint' ? '#eef2ff' : 'var(--color-bg)',
+                  perspective === 'joint' ? 'var(--color-primary-subtle, #e0e7ff)' : 'var(--color-bg)',
                 color:
-                  perspective === 'joint' ? '#4338ca' : 'var(--color-text-secondary)',
+                  perspective === 'joint' ? 'var(--color-primary, #1f2b4d)' : 'var(--color-text-secondary)',
                 fontSize: '0.8125rem',
                 fontWeight: 600,
                 cursor: 'pointer',

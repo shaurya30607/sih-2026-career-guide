@@ -1,30 +1,28 @@
 import React from 'react';
 import { Menu, Globe, User } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
-import { SUPPORTED_LANGUAGES } from './navigationConfig';
+import { useTranslation, SupportedLanguageCode } from '../../i18n';
 
 export interface TopbarProps {
   sectionTitle: string;
-  selectedLanguage: string;
-  onLanguageChange: (lang: string) => void;
   onMobileMenuToggle: () => void;
   isMobileMenuOpen: boolean;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
   sectionTitle,
-  selectedLanguage,
-  onLanguageChange,
   onMobileMenuToggle,
   isMobileMenuOpen,
 }) => {
+  const { language, changeLanguage, supportedLanguages, t } = useTranslation();
+
   return (
     <header className="app-topbar">
       <div className="topbar-left">
         <div className="topbar-mobile-toggle">
           <IconButton
             icon={<Menu size={20} />}
-            ariaLabel={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            ariaLabel={isMobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             onClick={onMobileMenuToggle}
             variant="ghost"
             size="sm"
@@ -34,22 +32,23 @@ export const Topbar: React.FC<TopbarProps> = ({
       </div>
 
       <div className="topbar-right">
-        {/* Language Selector */}
-        <div className="language-selector">
-          <Globe size={16} aria-hidden="true" style={{ color: 'var(--color-text-muted)' }} />
+        {/* Global Language Selector */}
+        <div className="language-selector" title={t('nav.chooseLanguage')}>
+          <Globe size={18} aria-hidden="true" style={{ color: 'var(--color-primary, #1f2b4d)', flexShrink: 0 }} />
           <label htmlFor="language-select" className="visually-hidden" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: 0 }}>
-            Choose language
+            {t('nav.chooseLanguage')}
           </label>
           <select
             id="language-select"
             className="language-select-input"
-            value={selectedLanguage}
-            onChange={(e) => onLanguageChange(e.target.value)}
-            aria-label="Select application language"
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value as SupportedLanguageCode)}
+            aria-label={t('nav.chooseLanguage')}
+            style={{ fontWeight: 600, fontSize: '0.9375rem', cursor: 'pointer' }}
           >
-            {SUPPORTED_LANGUAGES.map((lang) => (
+            {supportedLanguages.map((lang) => (
               <option key={lang.code} value={lang.code}>
-                {lang.label}
+                {lang.nativeName} ({lang.label})
               </option>
             ))}
           </select>
@@ -58,12 +57,12 @@ export const Topbar: React.FC<TopbarProps> = ({
         {/* Demo User Pill */}
         <div
           className="demo-user-pill"
-          title="Demo account session. Authentication is simulated for this prototype."
+          title={t('nav.demoNote')}
         >
           <div className="demo-user-avatar" aria-hidden="true">
             <User size={12} />
           </div>
-          <span style={{ fontWeight: 500 }}>Rahul (Student Demo)</span>
+          <span style={{ fontWeight: 500 }}>{t('nav.demoUser')}</span>
         </div>
       </div>
     </header>

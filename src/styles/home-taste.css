@@ -95,7 +95,7 @@
 .taste-hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 320px 280px;
+  grid-template-rows: minmax(330px, 1fr) 280px;
   gap: 8px;
 }
 
@@ -103,30 +103,49 @@
 .taste-hero-tile-name {
   background-color: var(--color-surface, #f4f4f2);
   border-radius: 8px;
-  padding: 32px;
+  padding: 36px 32px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: flex-start;
   position: relative;
   overflow: hidden;
+  min-height: 320px;
 }
 
 .taste-hero-brand-title {
-  font-size: clamp(3.5rem, 6.5vw, 6.5rem);
+  font-size: clamp(2.75rem, 4.8vw, 5rem);
   font-weight: 700;
-  line-height: 0.88;
-  letter-spacing: -0.05em;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   color: var(--color-ink, #1f2b4d);
-  margin: 0 0 12px 0;
+  margin: 0 0 14px 0;
+  padding-top: 6px;
 }
 
 .taste-hero-brand-sub {
   font-size: clamp(1rem, 1.2vw, 1.25rem);
-  line-height: 1.35;
+  line-height: 1.38;
   color: var(--color-muted, #6a7186);
-  max-width: 38ch;
+  max-width: 40ch;
   margin: 0;
+}
+
+/* Devanagari (Marathi & Hindi) Brand Placement Optimization */
+html[lang="mr"] .taste-hero-brand-title,
+html[lang="hi"] .taste-hero-brand-title {
+  font-size: clamp(2.35rem, 3.8vw, 4.1rem);
+  line-height: 1.16;
+  letter-spacing: 0;
+  padding-top: 8px;
+  margin-bottom: 12px;
+}
+
+html[lang="mr"] .taste-hero-brand-sub,
+html[lang="hi"] .taste-hero-brand-sub {
+  font-size: clamp(0.9375rem, 1.1vw, 1.125rem);
+  line-height: 1.45;
+  max-width: 44ch;
 }
 
 /* Top-Right & Bottom-Left: Photographs */

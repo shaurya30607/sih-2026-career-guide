@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Course } from '../../types/course';
 import { courseService, EDUCATION_LEVEL_LABELS } from '../../services/courses/courseService';
+import { useTranslation } from '../../i18n';
 
 export interface CourseCardProps {
   course: Course;
@@ -23,11 +24,38 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   onToggleBookmark,
   onViewDetails,
 }) => {
+  const { t, language } = useTranslation();
+  const isMr = language === 'mr';
+  const isHi = language === 'hi';
   const streamMeta = courseService.getStreamMeta(course.stream);
 
   const formattedSalary = course.careerOutcome.averageStartingSalaryInr
-    ? `₹${course.careerOutcome.averageStartingSalaryInr.toLocaleString('en-IN')} / mo`
-    : 'Stipend provided';
+    ? `₹${course.careerOutcome.averageStartingSalaryInr.toLocaleString('en-IN')} / ${isHi ? 'माह' : isMr ? 'महिना' : 'mo'}`
+    : isHi ? 'मानदेय उपलब्ध' : isMr ? 'मानधन उपलब्ध' : 'Stipend provided';
+
+  const modeLabel = isHi
+    ? course.trainingMode === 'offline'
+      ? 'ऑफलाइन कार्यशाला'
+      : course.trainingMode === 'hybrid'
+      ? 'हाइब्रिड'
+      : 'ऑनलाइन'
+    : isMr
+    ? course.trainingMode === 'offline'
+      ? 'प्रत्यक्ष कार्यशाळा'
+      : course.trainingMode === 'hybrid'
+      ? 'हायब्रिड'
+      : 'ऑनलाइन'
+    : course.trainingMode;
+
+  const minEduText = isHi
+    ? course.eligibility.minEducation === '10th_pass'
+      ? '१०वीं उत्तीर्ण (SSC)'
+      : '१२वीं उत्तीर्ण (HSC)'
+    : isMr
+    ? course.eligibility.minEducation === '10th_pass'
+      ? '१० वी उत्तीर्ण (SSC)'
+      : '१२ वी उत्तीर्ण (HSC)'
+    : EDUCATION_LEVEL_LABELS[course.eligibility.minEducation] || course.eligibility.minEducation;
 
   return (
     <article className="taste-specimen-card">
@@ -55,9 +83,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           <button
             type="button"
             className={`taste-bookmark-btn ${isBookmarked ? 'active' : ''}`}
-            aria-label={isBookmarked ? `Remove ${course.title} from saved` : `Save ${course.title}`}
-            title={isBookmarked ? 'Saved qualification' : 'Save qualification'}
+            aria-label={isBookmarked ? `${t('courses.removeSavedBtn')} ${course.title}` : `${t('courses.saveBtn')} ${course.title}`}
+            title={isBookmarked ? t('courses.removeSavedBtn') : t('courses.saveBtn')}
             onClick={() => onToggleBookmark(course.id)}
+            style={{ minHeight: '44px', minWidth: '44px' }}
           >
             {isBookmarked ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
           </button>
@@ -97,14 +126,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         {/* Key Ledger Facts Row */}
         <div className="taste-specimen-ledger-row">
           <div className="taste-ledger-mini-cell">
-            <span className="taste-mini-label">Entry Stipend / Wage</span>
+            <span className="taste-mini-label">{t('courses.startingStipend')}</span>
             <span className="taste-mini-value accent">{formattedSalary}</span>
           </div>
 
           <div className="taste-ledger-mini-cell">
-            <span className="taste-mini-label">Duration &amp; Mode</span>
+            <span className="taste-mini-label">{t('courses.durationAndMode')}</span>
             <span className="taste-mini-value">
-              {course.durationMonths} Months ({course.trainingMode})
+              {course.durationMonths} {isHi ? 'महीने' : isMr ? 'महिने' : 'Months'} ({modeLabel})
             </span>
           </div>
         </div>
@@ -124,7 +153,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           }}
         >
           <Briefcase size={14} style={{ color: 'var(--color-primary, #1f2b4d)', flexShrink: 0 }} aria-hidden="true" />
-          <span style={{ fontWeight: 600 }}>Target Role:</span>
+          <span style={{ fontWeight: 600 }}>{t('courses.targetRole')}:</span>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {course.careerOutcome.roleTitle}
           </span>
@@ -140,7 +169,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             ))}
             {course.skillsAcquired.length > 3 && (
               <span style={{ fontSize: '0.75rem', color: 'var(--color-muted, #6a7186)', alignSelf: 'center' }}>
-                +{course.skillsAcquired.length - 3} more
+                +{course.skillsAcquired.length - 3} {isHi ? 'और' : isMr ? 'अधिक' : 'more'}
               </span>
             )}
           </div>
@@ -151,7 +180,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       <div className="taste-specimen-action-bar">
         <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted, #6a7186)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
           <Clock size={13} aria-hidden="true" />
-          Min {EDUCATION_LEVEL_LABELS[course.eligibility.minEducation] || course.eligibility.minEducation}
+          {t('courses.minEduPrefix')} {minEduText}
         </span>
 
         <button
@@ -159,8 +188,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           id={`view-details-${course.id}`}
           className="taste-specimen-inspect-btn"
           onClick={() => onViewDetails(course.id)}
+          style={{ minHeight: '44px' }}
         >
-          Inspect Qualification
+          {t('courses.inspectBtn')}
           <ArrowRight size={14} />
         </button>
       </div>

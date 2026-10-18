@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
-  AssessmentLanguage,
   AssessmentAnswers,
   AnswerValue,
 } from './assessmentTypes';
@@ -11,6 +10,7 @@ import { QuestionRenderer } from './QuestionRenderer';
 import { AssessmentResults } from './AssessmentResults';
 import { Button } from '../../components/common/Button';
 import { ROUTES } from '../../app/routes';
+import { useTranslation, SupportedLanguageCode } from '../../i18n';
 
 export interface AssessmentScreenProps {
   courseId?: string | null;
@@ -25,7 +25,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
   onClearCourseContext,
   onViewCourseDetails,
 }) => {
-  const [language, setLanguage] = useState<AssessmentLanguage>('en');
+  const { language, changeLanguage, t } = useTranslation();
   const [answers, setAnswers] = useState<AssessmentAnswers>({});
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
   const [historyStack, setHistoryStack] = useState<number[]>([]);
@@ -72,25 +72,12 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
 
     const isValid = assessmentService.isAnswerValid(currentQuestion, answers);
     if (!isValid) {
-      const isMr = language === 'mr';
       if (currentQuestion.responseType === 'multiple_choice') {
-        setValidationError(
-          isMr
-            ? 'कृपया पुढे जाण्यासाठी किमान एक पर्याय निवडा.'
-            : 'Please select at least one option to continue.'
-        );
+        setValidationError(t('assessment.selectMultiError'));
       } else if (currentQuestion.responseType === 'rating_scale') {
-        setValidationError(
-          isMr
-            ? 'कृपया १ ते ५ पैकी एक रेटिंग निवडा.'
-            : 'Please select a rating between 1 and 5.'
-        );
+        setValidationError(t('assessment.selectRatingError'));
       } else {
-        setValidationError(
-          isMr
-            ? 'कृपया पुढे जाण्यापूर्वी एक पर्याय निवडा.'
-            : 'Please select an option before continuing.'
-        );
+        setValidationError(t('assessment.selectOptionError'));
       }
       return;
     }
@@ -186,7 +173,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
         totalQuestions={totalQuestions}
         categoryLabel={currentQuestion.categoryLabel}
         language={language}
-        onLanguageToggle={setLanguage}
+        onLanguageToggle={(lang) => changeLanguage(lang as SupportedLanguageCode)}
         onExit={() => setShowExitModal(true)}
       />
 
@@ -203,7 +190,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
 
       {/* Navigation Controls Bar */}
       <nav
-        aria-label={isMr ? 'मूल्यांकन नेव्हिगेशन' : 'Assessment Navigation'}
+        aria-label={language === 'hi' ? 'मूल्यांकन नेविगेशन' : isMr ? 'मूल्यांकन नेव्हिगेशन' : 'Assessment Navigation'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -220,9 +207,10 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           disabled={safeIndex === 0 && historyStack.length === 0}
           style={{
             visibility: safeIndex === 0 && historyStack.length === 0 ? 'hidden' : 'visible',
+            minHeight: '44px',
           }}
         >
-          {isMr ? 'मागे जा' : 'Back'}
+          {t('assessment.btnBack')}
         </Button>
 
         <Button
@@ -231,15 +219,11 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
           icon={safeIndex === totalQuestions - 1 ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
           iconPosition="right"
           onClick={handleContinue}
-          style={{ minWidth: '160px' }}
+          style={{ minWidth: '160px', minHeight: '44px' }}
         >
           {safeIndex === totalQuestions - 1
-            ? isMr
-              ? 'निकाल पहा'
-              : 'Complete & View Results'
-            : isMr
-            ? 'पुढे जा'
-            : 'Continue'}
+            ? t('assessment.btnFinish')
+            : t('assessment.btnContinue')}
         </Button>
       </nav>
 
@@ -297,7 +281,7 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
                   margin: 0,
                 }}
               >
-                {isMr ? 'मूल्यांकनातून बाहेर पडायचे का?' : 'Exit Assessment?'}
+                {t('assessment.exitModalTitle')}
               </h2>
             </div>
 
@@ -309,17 +293,15 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
                 marginBottom: '1.5rem',
               }}
             >
-              {isMr
-                ? 'आपली आतापर्यंतची उत्तरे या सत्रासाठी सुरक्षित जतन केली जातील. आपण नंतर परत येऊन उर्वरित प्रश्न पूर्ण करू शकता.'
-                : 'Your answered questions will be saved for this browsing session. You can return later to pick up where you left off.'}
+              {t('assessment.exitModalDesc')}
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <Button variant="outline" size="md" onClick={() => setShowExitModal(false)}>
-                {isMr ? 'सत्र सुरू ठेवा' : 'Continue Assessment'}
+              <Button variant="outline" size="md" onClick={() => setShowExitModal(false)} style={{ minHeight: '44px' }}>
+                {language === 'hi' ? 'सत्र जारी रखें' : isMr ? 'सत्र सुरू ठेवा' : 'Continue Assessment'}
               </Button>
-              <Button variant="primary" size="md" onClick={handleConfirmExit}>
-                {isMr ? 'जतन करा आणि बाहेर पडा' : 'Save & Exit'}
+              <Button variant="primary" size="md" onClick={handleConfirmExit} style={{ minHeight: '44px' }}>
+                {t('assessment.btnSaveExit')}
               </Button>
             </div>
           </div>

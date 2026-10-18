@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, X, BookmarkCheck, RotateCcw } from 'lucide-react';
 import { CourseFilter, EducationLevelRequired } from '../../types/course';
 import { VOCATIONAL_STREAMS } from '../../services/courses/courseService';
+import { useTranslation } from '../../i18n';
 
 export interface CourseFiltersProps {
   filters: CourseFilter;
@@ -20,6 +21,10 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
   filteredCoursesCount,
   bookmarkedCount,
 }) => {
+  const { t, language } = useTranslation();
+  const isMr = language === 'mr';
+  const isHi = language === 'hi';
+
   const hasActiveFilters = Boolean(
     (filters.searchQuery && filters.searchQuery.trim().length > 0) ||
       filters.stream ||
@@ -49,15 +54,15 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
             className="taste-search-input"
             value={filters.searchQuery || ''}
             onChange={(e) => onFilterChange({ ...filters, searchQuery: e.target.value })}
-            placeholder="Search qualifications, skills (EV, Solar, CNC, Lab), or job role..."
-            aria-label="Search courses"
+            placeholder={t('courses.searchPlaceholder')}
+            aria-label={t('courses.searchAriaLabel')}
           />
           {filters.searchQuery && (
             <button
               type="button"
               className="taste-search-clear-btn"
               onClick={() => onFilterChange({ ...filters, searchQuery: '' })}
-              aria-label="Clear search"
+              aria-label={t('courses.clearSearch')}
             >
               <X size={16} />
             </button>
@@ -70,9 +75,10 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
           onClick={() => onFilterChange({ ...filters, bookmarkedOnly: !filters.bookmarkedOnly })}
           aria-pressed={Boolean(filters.bookmarkedOnly)}
           className={`taste-saved-toggle-btn ${filters.bookmarkedOnly ? 'active' : ''}`}
+          style={{ minHeight: '44px' }}
         >
           <BookmarkCheck size={16} aria-hidden="true" />
-          <span>Saved Courses</span>
+          <span>{t('courses.savedOnly')}</span>
           {bookmarkedCount > 0 && (
             <span className="taste-saved-count">
               {bookmarkedCount}
@@ -86,9 +92,10 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
             type="button"
             className="taste-clear-filters-btn"
             onClick={onClearFilters}
+            style={{ minHeight: '44px' }}
           >
             <RotateCcw size={14} aria-hidden="true" style={{ display: 'inline', marginRight: 4 }} />
-            Reset Filters
+            {t('common.resetFilters')}
           </button>
         )}
       </div>
@@ -96,15 +103,16 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
       {/* Stream Tabs */}
       <div>
         <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted, #6a7186)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          Vocational Sector
+          {t('courses.sectorLabel')}
         </div>
         <div className="taste-stream-tabs">
           <button
             type="button"
             className={`taste-stream-tab ${!filters.stream ? 'active' : ''}`}
             onClick={() => onFilterChange({ ...filters, stream: undefined })}
+            style={{ minHeight: '40px' }}
           >
-            All Sectors
+            {t('common.allSectors')}
           </button>
 
           {VOCATIONAL_STREAMS.map((st) => {
@@ -115,6 +123,7 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
                 type="button"
                 className={`taste-stream-tab ${isSelected ? 'active' : ''}`}
                 onClick={() => onFilterChange({ ...filters, stream: isSelected ? undefined : st.key })}
+                style={{ minHeight: '40px' }}
               >
                 {st.shortLabel}
               </button>
@@ -128,7 +137,7 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {/* Education Level Selector */}
         <div className="taste-filter-select-group">
           <label htmlFor="filter-min-edu" className="taste-filter-select-label">
-            Min Education:
+            {t('courses.minEduLabel')}:
           </label>
           <select
             id="filter-min-edu"
@@ -140,17 +149,18 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
                 minEducation: e.target.value ? (e.target.value as EducationLevelRequired) : undefined,
               })
             }
+            aria-label={t('courses.minEduLabel')}
           >
-            <option value="">Any Qualification</option>
-            <option value="10th_pass">10th Pass (SSC)</option>
-            <option value="12th_pass">12th Pass (HSC)</option>
+            <option value="">{t('courses.anyEdu')}</option>
+            <option value="10th_pass">{isHi ? '१०वीं उत्तीर्ण (SSC)' : isMr ? '१० वी उत्तीर्ण (SSC)' : '10th Pass (SSC)'}</option>
+            <option value="12th_pass">{isHi ? '१२वीं उत्तीर्ण (HSC)' : isMr ? '१२ वी उत्तीर्ण (HSC)' : '12th Pass (HSC)'}</option>
           </select>
         </div>
 
         {/* Max Duration Selector */}
         <div className="taste-filter-select-group">
           <label htmlFor="filter-duration" className="taste-filter-select-label">
-            Duration:
+            {t('courses.durationLabel')}:
           </label>
           <select
             id="filter-duration"
@@ -162,18 +172,19 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
                 maxDurationMonths: e.target.value ? Number(e.target.value) : undefined,
               })
             }
+            aria-label={t('courses.durationLabel')}
           >
-            <option value="">Any Duration</option>
-            <option value="4">Up to 4 Months</option>
-            <option value="6">Up to 6 Months</option>
-            <option value="8">Up to 8 Months</option>
+            <option value="">{t('courses.anyDuration')}</option>
+            <option value="4">{t('courses.durationUpTo4')}</option>
+            <option value="6">{t('courses.durationUpTo6')}</option>
+            <option value="8">{t('courses.durationUpTo8')}</option>
           </select>
         </div>
 
         {/* Training Mode */}
         <div className="taste-filter-select-group">
           <label htmlFor="filter-mode" className="taste-filter-select-label">
-            Mode:
+            {t('courses.modeLabel')}:
           </label>
           <select
             id="filter-mode"
@@ -185,17 +196,18 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
                 trainingMode: e.target.value ? (e.target.value as 'offline' | 'online' | 'hybrid') : undefined,
               })
             }
+            aria-label={t('courses.modeLabel')}
           >
-            <option value="">Any Mode</option>
-            <option value="offline">Offline Workshop</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="online">Online</option>
+            <option value="">{t('courses.anyMode')}</option>
+            <option value="offline">{t('courses.modeOffline')}</option>
+            <option value="hybrid">{t('courses.modeHybrid')}</option>
+            <option value="online">{t('courses.modeOnline')}</option>
           </select>
         </div>
 
         {/* Count Indicator */}
         <div style={{ marginLeft: 'auto', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-muted, #6a7186)' }}>
-          {filteredCoursesCount} of {totalCoursesCount} qualifications listed
+          {t('courses.showingCount', { filtered: filteredCoursesCount, total: totalCoursesCount })}
         </div>
       </div>
     </div>

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Languages, LogOut, CheckCircle2 } from 'lucide-react';
-import { AssessmentLanguage } from './assessmentTypes';
+import { AssessmentLanguage, LocalizedString } from './assessmentTypes';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 
 export interface AssessmentProgressProps {
   currentIndex: number;
   totalQuestions: number;
-  categoryLabel: { en: string; mr: string };
+  categoryLabel: LocalizedString;
   language: AssessmentLanguage;
   onLanguageToggle: (lang: AssessmentLanguage) => void;
   onExit: () => void;
@@ -22,7 +22,33 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
   onExit,
 }) => {
   const isMr = language === 'mr';
+  const isHi = language === 'hi';
   const progressPercent = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+
+  const title = isHi
+    ? 'पारिवारिक करियर मार्गदर्शन'
+    : isMr
+    ? 'कुटुंब करिअर मार्गदर्शन'
+    : 'Family Career Guidance';
+
+  const badgeText = isHi
+    ? 'संवादात्मक मूल्यांकन · डेमो'
+    : isMr
+    ? 'संवादी मूल्यांकन · प्रात्यक्षिक'
+    : 'Interactive Assessment · Demo';
+
+  const subtitle = isHi
+    ? 'विद्यार्थी की रुचियों को समझें, प्राथमिकताओं की तुलना करें और मिलकर व्यावसायिक करियर के रास्ते खोजें।'
+    : isMr
+    ? 'विद्यार्थ्याची आवड समजून घ्या, प्राधान्यांची तुलना करा आणि व्यावसायिक करिअरचे मार्ग एकत्र शोधा.'
+    : 'Understand interests, compare priorities, and explore vocational pathways together.';
+
+  const resolvedCategoryLabel =
+    isHi && categoryLabel.hi
+      ? categoryLabel.hi
+      : isMr
+      ? categoryLabel.mr
+      : categoryLabel.en;
 
   return (
     <header className="assessment-header" style={{ marginBottom: '2rem' }}>
@@ -48,11 +74,11 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
                 margin: 0,
               }}
             >
-              {isMr ? 'कुटुंब करिअर मार्गदर्शन' : 'Family Career Guidance'}
+              {title}
             </h1>
             <Badge variant="primary" size="sm">
               <CheckCircle2 size={12} aria-hidden="true" style={{ marginRight: '4px' }} />
-              <span>{isMr ? 'संवादी मूल्यांकन · प्रात्यक्षिक' : 'Interactive Assessment · Demo'}</span>
+              <span>{badgeText}</span>
             </Badge>
           </div>
           <p
@@ -64,15 +90,13 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
               lineHeight: 1.5,
             }}
           >
-            {isMr
-              ? 'विद्यार्थ्याची आवड समजून घ्या, प्राधान्यांची तुलना करा आणि व्यावसायिक करिअरचे मार्ग एकत्र शोधा.'
-              : 'Understand interests, compare priorities, and explore vocational pathways together.'}
+            {subtitle}
           </p>
         </div>
 
         {/* Top Controls: Language Switcher and Save & Exit */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Language Toggle */}
+          {/* Language Toggle: English, Marathi, Hindi */}
           <div
             role="group"
             aria-label="Language Selector"
@@ -123,6 +147,23 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
             >
               मराठी
             </button>
+            <button
+              type="button"
+              onClick={() => onLanguageToggle('hi')}
+              style={{
+                padding: '0.3125rem 0.625rem',
+                borderRadius: 'var(--radius-full)',
+                border: 'none',
+                backgroundColor: language === 'hi' ? 'var(--color-primary)' : 'transparent',
+                color: language === 'hi' ? '#ffffff' : 'var(--color-text-secondary)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background-color 150ms ease, color 150ms ease',
+              }}
+            >
+              हिंदी
+            </button>
           </div>
 
           {/* Exit Action */}
@@ -133,7 +174,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
             icon={<LogOut size={14} />}
             style={{ color: 'var(--color-text-muted)' }}
           >
-            {isMr ? 'जतन करा आणि बाहेर पडा' : 'Save & Exit'}
+            {isHi ? 'सहेजें और बाहर निकलें' : isMr ? 'जतन करा आणि बाहेर पडा' : 'Save & Exit'}
           </Button>
         </div>
       </div>
@@ -167,18 +208,18 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
                 fontSize: '0.75rem',
               }}
             >
-              {isMr
+              {isHi || isMr
                 ? `प्रश्न ${currentIndex + 1} / ${totalQuestions}`
                 : `Question ${currentIndex + 1} of ${totalQuestions}`}
             </span>
             <span style={{ color: 'var(--color-border-strong)' }}>•</span>
             <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-              {isMr ? categoryLabel.mr : categoryLabel.en}
+              {resolvedCategoryLabel}
             </span>
           </div>
 
           <span style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-            {progressPercent}% {isMr ? 'पूर्ण' : 'completed'}
+            {progressPercent}% {isHi || isMr ? 'पूर्ण' : 'completed'}
           </span>
         </div>
 
@@ -188,7 +229,7 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
           aria-valuenow={progressPercent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={isMr ? 'मूल्यांकन प्रगती' : 'Assessment progress'}
+          aria-label={isHi ? 'मूल्यांकन प्रगति' : isMr ? 'मूल्यांकन प्रगती' : 'Assessment progress'}
           style={{
             height: '7px',
             backgroundColor: 'var(--color-surface-muted)',
@@ -210,3 +251,5 @@ export const AssessmentProgress: React.FC<AssessmentProgressProps> = ({
     </header>
   );
 };
+
+export default AssessmentProgress;

@@ -18,10 +18,19 @@ export class CounsellingService {
     course?: Course | null
   ): CounsellingMessage {
     const isMr = language === 'mr';
+    const isHi = language === 'hi';
     let welcomeText = '';
 
     if (course) {
-      if (isMr) {
+      if (isHi) {
+        if (perspective === 'student') {
+          welcomeText = `नमस्ते विद्यार्थी! हम **${course.title}** कोर्स पर चर्चा कर रहे हैं। प्रैक्टिकल वर्कशॉप, सिखाए जाने वाले कौशल और करियर के विकल्पों के बारे में आप क्या जानना चाहते हैं? नीचे दिए गए प्रश्नों में से चुनें या अपना प्रश्न पूछें।`;
+        } else if (perspective === 'parent') {
+          welcomeText = `नमस्ते अभिभावक जी! **${course.title}** कोर्स को लेकर माता-पिता के मन में आने वाले मुख्य प्रश्नों—जैसे नौकरी की गारंटी, शुरुआती वेतन, सरकारी मान्यता (NCVET) और करियर स्थिरता—पर चर्चा के लिए मैं उपस्थित हूँ। कृपया नीचे से कोई प्रश्न चुनें या अपना सवाल पूछें।`;
+        } else {
+          welcomeText = `नमस्ते! हम सब मिलकर **${course.title}** कोर्स का अन्वेषण कर रहे हैं। विद्यार्थी और अभिभावक दोनों के सवालों—जैसे काम का स्वरूप, शुरुआती मानदेय और डिग्री के अवसर—के समाधान के लिए मैं यहाँ हूँ। कोई प्रश्न चुनें या अपनी बात लिखें।`;
+        }
+      } else if (isMr) {
         if (perspective === 'student') {
           welcomeText = `नमस्कार विद्यार्थी मित्रा! आपण **${course.title}** या कोर्सचा अभ्यास करत आहोत. प्रत्यक्ष प्रॅक्टिकल वर्कशॉप, शिकवली जाणारी कौशल्ये आणि पुढील करिअर पर्यायांबद्दल तुला काय जाणून घ्यायचे आहे? खालीलपैकी प्रश्न निवडा किंवा तुझा प्रश्न विचार.`;
         } else if (perspective === 'parent') {
@@ -39,7 +48,15 @@ export class CounsellingService {
         }
       }
     } else {
-      if (isMr) {
+      if (isHi) {
+        if (perspective === 'student') {
+          welcomeText = `नमस्ते! 'स्किलसाथी' विद्यार्थी करियर मार्गदर्शन में आपका स्वागत है। यहाँ आप विभिन्न वोकेशनल कोर्स, प्रैक्टिकल कौशल और भविष्य के अवसरों की जानकारी प्राप्त कर सकते हैं।`;
+        } else if (perspective === 'parent') {
+          welcomeText = `नमस्ते अभिभावक जी! 'स्किलसाथी' काउंसलिंग में आपका स्वागत है। अपने बच्चे के भविष्य के लिए वोकेशनल शिक्षा की स्थिरता, शुरुआती आय और डिग्री से तुलना पर हम यहाँ विस्तार से चर्चा कर सकते हैं।`;
+        } else {
+          welcomeText = `नमस्ते! 'स्किलसाथी' (SkillSaathi) एआई परिवार करियर काउंसलर में आपका स्वागत है। यहाँ विद्यार्थी और अभिभावक मिलकर वोकेशनल शिक्षा के लाभ, कमाई, नौकरी की सुरक्षा और भावी अवसरों पर एक साथ विचार कर सकते हैं।`;
+        }
+      } else if (isMr) {
         if (perspective === 'student') {
           welcomeText = `नमस्कार! 'स्किलसाथी' विद्यार्थी करिअर मार्गदर्शनात आपले स्वागत आहे. येथे तू विविध व्यावसायिक कोर्सेस, प्रत्यक्ष कौशल्ये आणि भविष्यातील संधींबद्दल माहिती मिळवू शकतोस.`;
         } else if (perspective === 'parent') {
@@ -58,11 +75,17 @@ export class CounsellingService {
       }
     }
 
+    const senderName = isHi
+      ? 'स्किलसाथी काउंसलर (SkillSaathi)'
+      : isMr
+      ? 'स्किलसाथी समुपदेशक (SkillSaathi)'
+      : 'SkillSaathi AI Counsellor';
+
     return {
       id: `msg-sys-welcome-${Date.now()}`,
       sessionId: 'session-local-simulated',
       senderRole: 'counsellor',
-      senderName: isMr ? 'स्किलसाथी समुपदेशक (SkillSaathi)' : 'SkillSaathi AI Counsellor',
+      senderName,
       content: welcomeText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       language,
@@ -83,7 +106,12 @@ export class CounsellingService {
     const list = SUGGESTED_QUESTIONS[perspective] || SUGGESTED_QUESTIONS.joint;
     return list.map((item) => ({
       id: item.id,
-      text: language === 'mr' ? item.mr : item.en,
+      text:
+        language === 'hi' && item.hi
+          ? item.hi
+          : language === 'mr'
+          ? item.mr
+          : item.en,
     }));
   }
 
@@ -111,18 +139,27 @@ export class CounsellingService {
 
     // Generate language-specific response
     const content =
-      language === 'mr'
+      language === 'hi' && matchedTemplate.hi
+        ? matchedTemplate.hi(course, perspective)
+        : language === 'mr'
         ? matchedTemplate.mr(course, perspective)
         : matchedTemplate.en(course, perspective);
 
     // Simulate realistic model thinking time
     await new Promise((resolve) => setTimeout(resolve, 650));
 
+    const senderName =
+      language === 'hi'
+        ? 'स्किलसाथी काउंसलर'
+        : language === 'mr'
+        ? 'स्किलसाथी समुपदेशक'
+        : 'SkillSaathi AI Counsellor';
+
     return {
       id: `msg-resp-${Date.now()}`,
       sessionId: 'session-local-simulated',
       senderRole: 'counsellor',
-      senderName: language === 'mr' ? 'स्किलसाथी समुपदेशक' : 'SkillSaathi AI Counsellor',
+      senderName,
       content,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       language,
@@ -143,12 +180,12 @@ export class CounsellingService {
 
     if (perspective === 'parent') {
       senderRole = 'parent';
-      senderName = language === 'mr' ? 'पालक (Parent)' : 'Parent';
+      senderName = language === 'hi' ? 'अभिभावक (Parent)' : language === 'mr' ? 'पालक (Parent)' : 'Parent';
     } else if (perspective === 'joint') {
       senderRole = 'student';
-      senderName = language === 'mr' ? 'कुटुंब (Family)' : 'Family';
+      senderName = language === 'hi' ? 'परिवार (Family)' : language === 'mr' ? 'कुटुंब (Family)' : 'Family';
     } else {
-      senderName = language === 'mr' ? 'विद्यार्थी (Student)' : 'Student';
+      senderName = language === 'hi' ? 'विद्यार्थी (Student)' : language === 'mr' ? 'विद्यार्थी (Student)' : 'Student';
     }
 
     return {

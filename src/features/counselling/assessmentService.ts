@@ -240,11 +240,13 @@ export class AssessmentService {
       discussionPoints.push({
         en: 'Balancing Immediate Income vs. Degree Goals: Discuss whether completing an 6–8 month technical trade allows the student to become self-reliant while keeping lateral entry into a B.Voc degree open after 1 year.',
         mr: 'तातडीचे उत्पन्न आणि पदवीचे ध्येय: ६ ते ८ महिन्यांचे तांत्रिक प्रशिक्षण घेऊन आधी नोकरी सुरू करणे आणि १ वर्षानंतर स्वतःच्या कमाईवर पुढील बी.व्होक पदवी करणे यावर चर्चा करा.',
+        hi: 'त्वरित आय बनाम डिग्री का लक्ष्य: चर्चा करें कि क्या 6-8 महीने का तकनीकी कोर्स पूरा करके छात्र आत्मनिर्भर बन सकता है और 1 वर्ष बाद अपनी कमाई से बी.वॉक (B.Voc) डिग्री में प्रवेश ले सकता है।',
       });
     } else {
       discussionPoints.push({
         en: 'Exploring Practical Apprenticeship Options: Evaluate how combining 70% workshop lab training with government NAPS monthly stipends creates direct company job security.',
         mr: 'प्रॅक्टिकल आणि शासकीय अप्रेंटिसशिप: ७०% प्रॅक्टिकल वर्कशॉप आणि शासकीय विद्यावेतन (NAPS) नोकरीची सुरक्षितता कशी देतात हे समजून घ्या.',
+        hi: 'प्रैक्टिकल और सरकारी अप्रेंटिसशिप: 70% वर्कशॉप लैब ट्रेनिंग और सरकारी वजीफा (NAPS) सीधे कंपनी में रोजगार सुरक्षा कैसे प्रदान करते हैं, इसे समझें।',
       });
     }
 
@@ -253,27 +255,32 @@ export class AssessmentService {
       discussionPoints.push({
         en: 'Income Growth Trajectory: Certified technicians typically start at ₹16,000–₹24,000/month, with skilled operators advancing to ₹35,000+ within 3–4 years as they master automation controls.',
         mr: 'पगारवाढीचा आलेख: सुरुवातीचा पगार ₹१६,००० ते ₹२४,००० असला तरी ३-४ वर्षांच्या अनुभवानंतर प्रगत मशिनिंग किंवा ईव्हीमध्ये पगार ₹३५,०००+ पर्यंत वाढतो.',
+        hi: 'वेतन वृद्धि का ग्राफ: प्रमाणित तकनीशियन आमतौर पर ₹16,000–₹24,000/माह से शुरू करते हैं और 3–4 वर्षों के अनुभव के साथ स्वचालन व ईवी में वेतन ₹35,000+ तक पहुंच जाता है।',
       });
     } else if (primaryConcernId === 'social_respect') {
       discussionPoints.push({
         en: 'Prestige of Modern Engineering Trades: Highlight to relatives that modern sectors like EV diagnostics and Solar engineering carry high industry demand and professional technical respect.',
         mr: 'आधुनिक तंत्रज्ञानाचा सन्मान: ईव्ही, सोलर किंवा आयटी यांसारख्या आधुनिक तंत्रज्ञानामुळे आज कुशल तंत्रज्ञाला समाजात आणि उद्योगात मोठा मान मिळतो.',
+        hi: 'आधुनिक तकनीकों का सम्मान: ईवी डायग्नोस्टिक्स, सोलर और आईटी जैसे आधुनिक क्षेत्रों में आज कुशल तकनीशियनों को उद्योग और समाज में बड़ा सम्मान मिलता है।',
       });
     } else if (primaryConcernId === 'employment') {
       discussionPoints.push({
         en: 'Reviewing Employer MoUs: Look together at the training center’s documented campus placement partners and signed corporate tie-ups before paying any admission fees.',
         mr: 'संस्थेचे प्लेसमेंट रेकॉर्ड: प्रवेश घेण्यापूर्वी प्रशिक्षण केंद्राचे अधिकृत प्लेसमेंट भागीदार आणि कंपन्यांशी झालेले करार तपासा.',
+        hi: 'प्लेसमेंट रिकॉर्ड की जांच: प्रवेश लेने से पहले प्रशिक्षण केंद्र के आधिकारिक प्लेसमेंट पार्टनर और कंपनियों से हुए अनुबंधों की समीक्षा करें।',
       });
     } else {
       discussionPoints.push({
         en: 'Shared Decision Checklist: Agree on which 2 factors matter most to both of you (e.g. proximity to home vs. starting stipend) so decisions feel unified.',
         mr: 'एकत्रित निर्णयाची रूपरेषा: घराजवळील केंद्र, फी सवलत किंवा नोकरीची संधी यांपैकी कोणत्या दोन बाबी दोघांसाठी महत्त्वाच्या आहेत हे ठरवा.',
+        hi: 'संयुक्त निर्णय चेकलिस्ट: घर से दूरी, फीस छूट या शुरुआती वजीफा — तय करें कि दोनों के लिए कौन से 2 कारक सबसे महत्वपूर्ण हैं ताकि निर्णय सर्वसम्मत हो।',
       });
     }
 
     discussionPoints.push({
       en: 'Visiting a Training Center Together: Schedule an in-person visit to a nearby ITI or NSDC training hub to observe the workshop equipment, tools, and batch instructors firsthand.',
       mr: 'प्रशिक्षण केंद्राला प्रत्यक्ष भेट: नजीकच्या अधिकृत केंद्राला विद्यार्थी आणि पालकांनी एकत्र भेट देऊन तेथील लॅब, साधने आणि शिक्षकांशी चर्चा करा.',
+      hi: 'प्रशिक्षण केंद्र का प्रत्यक्ष दौरा: नजदीकी आईटीआई (ITI) या एनएसडीसी केंद्र पर छात्र और अभिभावक साथ जाकर वहां की लैब, टूल्स और प्रशिक्षकों से प्रत्यक्ष मिलें।',
     });
 
     // 15. Concrete Next Steps
@@ -281,14 +288,17 @@ export class AssessmentService {
       {
         en: 'Inspect verified NCVET and NSQF Level accreditation details for your shortlisted courses.',
         mr: 'निवडलेल्या कोर्सेसची NCVET शासकीय मान्यता आणि NSQF स्तर तपासा.',
+        hi: 'चुने गए कोर्सेज की सरकारी मान्यता (NCVET) और कौशल स्तर (NSQF Level) की जांच करें।',
       },
       {
         en: 'Check government fee subsidy eligibility under PMKVY or Maharashtra State Skill schemes.',
         mr: 'महाराष्ट्र कौशल्य विकास किंवा PMKVY अंतर्गत फी सवलत किंवा शिष्यवृत्तीची पात्रता तपासा.',
+        hi: 'पीएमकेवीवाई (PMKVY) या राज्य कौशल विकास योजनाओं के तहत फीस सब्सिडी और छात्रवृत्ति पात्रता देखें।',
       },
       {
         en: 'Speak with an accredited district vocational counsellor for 1-on-1 family guidance.',
         mr: 'अधिक वैयक्तिक मार्गदर्शनासाठी जिल्हास्तरीय तज्ज्ञ समुपदेशकांशी संपर्क साधा.',
+        hi: 'व्यक्तिगत मार्गदर्शन के लिए जिला स्तरीय मान्यता प्राप्त काउंसलर से 1-ऑन-1 चर्चा का समय तय करें।',
       },
     ];
 

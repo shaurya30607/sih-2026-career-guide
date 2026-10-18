@@ -15,6 +15,7 @@ import { Course } from '../../types/course';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { CounsellorRequestForm } from './CounsellorRequestForm';
+import { ASSESSMENT_QUESTIONS } from './assessmentQuestions';
 
 export interface AssessmentResultsProps {
   results: AssessmentResultsData;
@@ -32,18 +33,27 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   onRestart,
 }) => {
   const isMr = language === 'mr';
+  const isHi = language === 'hi';
   const [showCounsellorModal, setShowCounsellorModal] = useState<boolean>(false);
 
   // Confidence label mapping
-  const confidenceLabels: Record<number, { en: string; mr: string }> = {
-    1: { en: 'Undecided / Exploring', mr: 'अजून निश्चित नाही / शोध सुरू' },
-    2: { en: 'Initial Ideas / Exploring', mr: 'पर्यायांचा विचार सुरू' },
-    3: { en: 'Moderate Clarity', mr: 'काही अंशी स्पष्टता' },
-    4: { en: 'High Clarity / Narrowed Down', mr: 'जवळपास निश्चित' },
-    5: { en: 'Very Clear & Ready', mr: 'पूर्णपणे ठाम व तयार' },
+  const confidenceLabels: Record<number, { en: string; mr: string; hi: string }> = {
+    1: { en: 'Undecided / Exploring', mr: 'अजून निश्चित नाही / शोध सुरू', hi: 'अभी अनिश्चित / खोज जारी' },
+    2: { en: 'Initial Ideas / Exploring', mr: 'पर्यायांचा विचार सुरू', hi: 'शुरुआती विचार / अन्वेषण' },
+    3: { en: 'Moderate Clarity', mr: 'काही अंशी स्पष्टता', hi: 'मध्यम स्पष्टता' },
+    4: { en: 'High Clarity / Narrowed Down', mr: 'जवळपास निश्चित', hi: 'काफी स्पष्ट / विकल्प तय' },
+    5: { en: 'Very Clear & Ready', mr: 'पूर्णपणे ठाम व तयार', hi: 'पूरी तरह स्पष्ट और तैयार' },
   };
 
-  const confidenceText = confidenceLabels[results.confidenceScore] || confidenceLabels[3];
+  const confidenceEntry = confidenceLabels[results.confidenceScore] || confidenceLabels[3];
+  const confidenceText = isHi ? confidenceEntry.hi : isMr ? confidenceEntry.mr : confidenceEntry.en;
+
+  // Resolve localized concern label
+  const concernQuestion = ASSESSMENT_QUESTIONS.find((q) => q.id === 'q_concern');
+  const concernOption = concernQuestion?.options?.find((o) => o.id === results.primaryConcernId);
+  const localizedConcernLabel = concernOption
+    ? (isHi && concernOption.label.hi ? concernOption.label.hi : isMr ? concernOption.label.mr : concernOption.label.en)
+    : results.primaryConcernLabel;
 
   return (
     <div className="assessment-results-view" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -60,10 +70,10 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <Badge variant="primary" size="md">
             <Sparkles size={13} aria-hidden="true" style={{ marginRight: '4px' }} />
-            <span>{isMr ? 'मूल्यांकन निष्कर्ष अहवाल' : 'Assessment Guidance Summary'}</span>
+            <span>{isHi ? 'मूल्यांकन निष्कर्ष रिपोर्ट' : isMr ? 'मूल्यांकन निष्कर्ष अहवाल' : 'Assessment Guidance Summary'}</span>
           </Badge>
           <Badge variant="neutral" size="sm">
-            <span>{isMr ? 'प्रोटोटाइप मार्गदर्शक निकाल' : 'Prototype Guidance Metric'}</span>
+            <span>{isHi ? 'प्रोटोटाइप मार्गदर्शन मीट्रिक' : isMr ? 'प्रोटोटाइप मार्गदर्शक निकाल' : 'Prototype Guidance Metric'}</span>
           </Badge>
         </div>
 
@@ -76,7 +86,11 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             margin: '0 0 0.5rem 0',
           }}
         >
-          {isMr ? 'आपल्या कुटुंबासाठी तयार केलेले करिअर मार्गदर्शन' : 'Tailored Family Career Roadmap'}
+          {isHi
+            ? 'आपके परिवार के लिए तैयार करियर रोडमैप'
+            : isMr
+            ? 'आपल्या कुटुंबासाठी तयार केलेले करिअर मार्गदर्शन'
+            : 'Tailored Family Career Roadmap'}
         </h1>
 
         <p
@@ -88,14 +102,16 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             lineHeight: 1.5,
           }}
         >
-          {isMr
+          {isHi
+            ? 'आपके उत्तरों के अनुसार विद्यार्थी की रुचि, परिवार की स्थिरता और सरकारी मान्यता के आधार पर तैयार मार्गदर्शन रिपोर्ट नीचे दी गई है।'
+            : isMr
             ? 'आपल्या उत्तरांनुसार विद्यार्थ्याची आवड, कुटुंबाची सुरक्षिततेची गरज आणि शासकीय मान्यता या सर्वांचा समतोल साधणारा अहवाल खाली दिला आहे.'
             : 'Based on your shared answers, here is a balanced summary connecting student interests with family stability, accredited qualifications, and verified trade pathways.'}
         </p>
 
         <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Button variant="primary" size="md" icon={<BookOpen size={16} />} onClick={onExploreCourses}>
-            {isMr ? 'सर्व कोर्सेस एक्सप्लोर करा' : 'Explore Matched Courses'}
+            {isHi ? 'मैच किए गए कोर्स देखें' : isMr ? 'सर्व कोर्सेस एक्सप्लोर करा' : 'Explore Matched Courses'}
           </Button>
           <Button
             variant="outline"
@@ -103,10 +119,10 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             icon={<UserCheck size={16} />}
             onClick={() => setShowCounsellorModal(true)}
           >
-            {isMr ? 'तज्ज्ञ समुपदेशकांशी संपर्क साधा' : 'Talk to a Human Counsellor'}
+            {isHi ? 'विशेषज्ञ काउंसलर से बात करें' : isMr ? 'तज्ज्ञ समुपदेशकांशी संपर्क साधा' : 'Talk to a Human Counsellor'}
           </Button>
           <Button variant="ghost" size="md" icon={<RotateCcw size={14} />} onClick={onRestart}>
-            {isMr ? 'मूल्यांकन पुन्हा सुरू करा' : 'Restart Assessment'}
+            {isHi ? 'मूल्यांकन पुनः शुरू करें' : isMr ? 'मूल्यांकन पुन्हा सुरू करा' : 'Restart Assessment'}
           </Button>
         </div>
       </section>
@@ -121,7 +137,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             marginBottom: '1rem',
           }}
         >
-          {isMr ? 'आम्हाला समजलेले मुख्य मुद्दे' : 'What We Learned From Your Session'}
+          {isHi ? 'आपके सत्र से मिले मुख्य बिंदु' : isMr ? 'आम्हाला समजलेले मुख्य मुद्दे' : 'What We Learned From Your Session'}
         </h2>
 
         <div
@@ -142,18 +158,18 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             }}
           >
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isMr ? 'रस असणारी क्षेत्रे' : 'Interest Sectors'}
+              {isHi ? 'रुचि के क्षेत्र' : isMr ? 'रस असणारी क्षेत्रे' : 'Interest Sectors'}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginTop: '0.5rem' }}>
               {results.interestStreams.length > 0 ? (
                 results.interestStreams.map((s) => (
                   <Badge key={s} variant="primary" size="sm">
-                    {s.replace('_', ' ').toUpperCase()}
+                    {s.replace(/_/g, ' ').toUpperCase()}
                   </Badge>
                 ))
               ) : (
                 <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-                  {isMr ? 'सर्व क्षेत्रांचा विचार सुरू' : 'Open to high-demand sectors'}
+                  {isHi ? 'सभी प्रमुख क्षेत्रों पर विचार जारी' : isMr ? 'सर्व क्षेत्रांचा विचार सुरू' : 'Open to high-demand sectors'}
                 </span>
               )}
             </div>
@@ -170,17 +186,17 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             }}
           >
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isMr ? 'कुटुंबाची मुख्य प्राथमिकता' : 'Principal Family Concern'}
+              {isHi ? 'परिवार की मुख्य प्राथमिकता' : isMr ? 'कुटुंबाची मुख्य प्राथमिकता' : 'Principal Family Concern'}
             </div>
             <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-              {results.primaryConcernLabel}
+              {localizedConcernLabel}
             </div>
             {results.deepDiveAnswer && (
               <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
-                {isMr ? 'नोंदवलेली अपेक्षा:' : 'Recorded specification:'}{' '}
+                {isHi ? 'दर्ज की गई अपेक्षा:' : isMr ? 'नोंदवलेली अपेक्षा:' : 'Recorded specification:'}{' '}
                 <strong>
                   {typeof results.deepDiveAnswer === 'number'
-                    ? `₹${results.deepDiveAnswer.toLocaleString('en-IN')} / mo`
+                    ? `₹${results.deepDiveAnswer.toLocaleString('en-IN')} ${isHi ? '/ माह' : isMr ? '/ महिना' : '/ mo'}`
                     : String(results.deepDiveAnswer).replace(/_/g, ' ')}
                 </strong>
               </div>
@@ -198,18 +214,22 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             }}
           >
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              {isMr ? 'करिअर आत्मविश्वास पातळी' : 'Student Confidence Index'}
+              {isHi ? 'करियर आत्मविश्वास सूचकांक' : isMr ? 'करिअर आत्मविश्वास पातळी' : 'Student Confidence Index'}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>
                 {results.confidenceScore} / 5
               </span>
               <span style={{ fontSize: '0.875rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-                ({isMr ? confidenceText.mr : confidenceText.en})
+                ({confidenceText})
               </span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.375rem' }}>
-              {isMr ? 'योग्य चर्चेमुळे आत्मविश्वास वाढू शकतो' : 'Structured family dialogue builds clarity'}
+              {isHi
+                ? 'पारिवारिक बातचीत से स्पष्टता और आत्मविश्वास बढ़ता है'
+                : isMr
+                ? 'योग्य चर्चेमुळे आत्मविश्वास वाढू शकतो'
+                : 'Structured family dialogue builds clarity'}
             </div>
           </div>
         </div>
@@ -220,16 +240,18 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-              {isMr ? 'शिफारस केलेले अधिकृत कोर्सेस' : 'Recommended Accredited Courses'}
+              {isHi ? 'अनुशंसित मान्यताप्राप्त कोर्सेज' : isMr ? 'शिफारस केलेले अधिकृत कोर्सेस' : 'Recommended Accredited Courses'}
             </h2>
             <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0 0 0' }}>
-              {isMr
+              {isHi
+                ? 'आपकी रुचियों और प्राथमिकताओं के आधार पर सरकारी मान्यता (NCVET) प्राप्त कोर्स'
+                : isMr
                 ? 'आपल्या आवडी आणि पात्रतेनुसार शासकीय मान्यताप्राप्त (NCVET) कोर्सेस'
                 : 'Selected from the SkillSaathi catalogue based on your stated interests and priorities'}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={onExploreCourses} icon={<ArrowRight size={14} />}>
-            {isMr ? 'कॅटलॉग पहा' : 'View Full Catalogue'}
+            {isHi ? 'पूरा कैटलॉग देखें' : isMr ? 'कॅटलॉग पहा' : 'View Full Catalogue'}
           </Button>
         </div>
 
@@ -288,7 +310,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 {/* Practical Skills Acquired */}
                 <div style={{ marginBottom: '0.75rem' }}>
                   <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.375rem' }}>
-                    {isMr ? 'शिकवली जाणारी प्रत्यक्ष कौशल्ये:' : 'Key Hands-on Skills:'}
+                    {isHi ? 'सिखाए जाने वाले प्रैक्टिकल कौशल:' : isMr ? 'शिकवली जाणारी प्रत्यक्ष कौशल्ये:' : 'Key Hands-on Skills:'}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                     {(course.skillsAcquired || course.highlights || []).slice(0, 3).map((skill: string, sIdx: number) => (
@@ -324,7 +346,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 >
                   <Briefcase size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
                   <span>
-                    <strong>{isMr ? 'संभाव्य पद:' : 'Target Job Role:'}</strong>{' '}
+                    <strong>{isHi ? 'संभावित पद:' : isMr ? 'संभाव्य पद:' : 'Target Job Role:'}</strong>{' '}
                     {course.careerOutcome.roleTitle}
                   </span>
                 </div>
@@ -344,7 +366,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <Clock size={14} aria-hidden="true" />
                   <span>
-                    {course.durationMonths} {isMr ? 'महिने' : 'Months'} ({course.trainingMode})
+                    {course.durationMonths} {isHi ? 'महीने' : isMr ? 'महिने' : 'Months'} ({course.trainingMode})
                   </span>
                 </div>
 
@@ -354,7 +376,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                   onClick={() => onViewCourseDetails(course.id)}
                   style={{ fontSize: '0.75rem' }}
                 >
-                  {isMr ? 'तपशील पहा' : 'View Details'}
+                  {isHi ? 'विवरण देखें' : isMr ? 'तपशील पहा' : 'View Details'}
                 </Button>
               </div>
             </div>
@@ -389,10 +411,12 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
           </div>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-              {isMr ? 'कुटुंबासाठी चर्चा मार्गदर्शक' : 'Student-Parent Discussion Prompts'}
+              {isHi ? 'परिवार के लिए चर्चा गाइड' : isMr ? 'कुटुंबासाठी चर्चा मार्गदर्शक' : 'Student-Parent Discussion Prompts'}
             </h2>
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-              {isMr
+              {isHi
+                ? 'विद्यार्थी की आकांक्षाओं और पारिवारिक सुरक्षा के समन्वय हेतु इन बिंदुओं पर चर्चा करें'
+                : isMr
                 ? 'घरी निर्णय घेताना विद्यार्थी आणि पालकांनी एकत्र बसून या मुद्यांवर चर्चा करावी'
                 : 'Use these neutral prompts to align student aspirations with family security'}
             </span>
@@ -432,7 +456,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                 {idx + 1}
               </span>
               <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text-primary)', lineHeight: 1.5 }}>
-                {isMr ? pt.mr : pt.en}
+                {isHi && pt.hi ? pt.hi : isMr ? pt.mr : pt.en}
               </p>
             </div>
           ))}
@@ -449,14 +473,16 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         }}
       >
         <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.75rem' }}>
-          {isMr ? 'पुढील व्यावहारिक पावले' : 'Suggested Actionable Next Steps'}
+          {isHi ? 'सुझाए गए अगले कदम' : isMr ? 'पुढील व्यावहारिक पावले' : 'Suggested Actionable Next Steps'}
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           {results.nextSteps.map((step, idx) => (
             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem' }}>
               <TrendingUp size={16} style={{ color: 'var(--color-success)', flexShrink: 0 }} aria-hidden="true" />
-              <span style={{ color: 'var(--color-text-secondary)' }}>{isMr ? step.mr : step.en}</span>
+              <span style={{ color: 'var(--color-text-secondary)' }}>
+                {isHi && step.hi ? step.hi : isMr ? step.mr : step.en}
+              </span>
             </div>
           ))}
         </div>
@@ -472,8 +498,10 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             lineHeight: 1.5,
           }}
         >
-          <strong>{isMr ? 'मार्गदर्शक सूचना:' : 'Transparency Note:'}</strong>{' '}
-          {isMr
+          <strong>{isHi || isMr ? 'मार्गदर्शक सूचना:' : 'Transparency Note:'}</strong>{' '}
+          {isHi
+            ? 'ये परिणाम आपके उत्तरों पर आधारित परिचयात्मक सुझाव हैं, कोई नौकरी की कानूनी गारंटी नहीं। किसी भी संस्थान में प्रवेश से पहले उसकी आधिकारिक NCVET संबद्धता अवश्य जांचें।'
+            : isMr
             ? 'हे निकाल प्रात्यक्षिक नमुना सूचना आहेत, कोणतीही नोकरी हमी किंवा व्यावसायिक निदान नाही. कोणत्याही संस्थेत प्रवेश घेण्यापूर्वी प्रत्यक्ष NCVET मान्यता तपासा.'
             : 'These recommendations are prototype algorithmic suggestions based on your responses, not guaranteed job contracts or clinical assessments. Always verify batch schedules, fee waivers, and affiliation with the respective vocational institute.'}
         </div>
@@ -489,3 +517,5 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
     </div>
   );
 };
+
+export default AssessmentResults;

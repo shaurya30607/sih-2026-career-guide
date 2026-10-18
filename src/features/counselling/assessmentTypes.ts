@@ -1,6 +1,6 @@
 import { Course } from '../../types/course';
 
-export type AssessmentLanguage = 'en' | 'mr';
+export type AssessmentLanguage = 'en' | 'mr' | 'hi';
 
 export type AssessmentResponseType =
   | 'single_choice'
@@ -13,6 +13,7 @@ export type AssessmentResponseType =
 export interface LocalizedString {
   en: string;
   mr: string;
+  hi?: string;
 }
 
 export interface QuestionOption {

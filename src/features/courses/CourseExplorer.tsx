@@ -5,6 +5,7 @@ import { CourseCard } from './CourseCard';
 import { CourseFilters } from './CourseFilters';
 import { CourseDetails } from './CourseDetails';
 import { courseService } from '../../services/courses/courseService';
+import { useTranslation } from '../../i18n';
 
 export interface CourseExplorerProps {
   selectedCourseId?: string | null;
@@ -19,6 +20,7 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
   onConsultCounsellor,
   onNavigateToOnboarding,
 }) => {
+  const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState<CourseFilter>({});
@@ -79,25 +81,25 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
       {/* Editorial Register Masthead */}
       <div className="taste-explorer-masthead">
         <div>
-          <h1 className="taste-explorer-title">Vocational Course Register</h1>
+          <h1 className="taste-explorer-title">{t('courses.registerTitle')}</h1>
           <p className="taste-explorer-standfirst">
-            Accredited technical qualifications across India. Compare regulated NSQF qualification tiers, dual-system apprenticeships, and university credit bridges.
+            {t('courses.registerSubtitle')}
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <span className="taste-explorer-meta-count">
-            {filteredCourses.length} of {courses.length} Accredited Qualifications
+            {t('courses.showingCount', { filtered: filteredCourses.length, total: courses.length })}
           </span>
 
           <button
             type="button"
             className="taste-btn-primary"
-            style={{ padding: '10px 18px', fontSize: '0.875rem' }}
+            style={{ padding: '10px 18px', fontSize: '0.875rem', minHeight: '44px' }}
             onClick={onNavigateToOnboarding}
           >
             <SlidersHorizontal size={15} />
-            Personalize Preferences
+            {t('courses.preferencesBtn')}
           </button>
         </div>
       </div>
@@ -130,17 +132,18 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
         <div className="taste-empty-register">
           <FilterX size={36} color="var(--color-muted, #6a7186)" />
           <h2 className="taste-empty-title">
-            No vocational courses match your current filters
+            {t('courses.emptyTitle')}
           </h2>
           <p className="taste-empty-desc">
-            Broaden your search keywords, switch sector filters, or reset qualification requirements to view all registered options.
+            {t('courses.emptyDesc')}
           </p>
           <button
             type="button"
             className="taste-btn-primary"
             onClick={handleClearFilters}
+            style={{ minHeight: '44px' }}
           >
-            Reset All Filters
+            {t('common.resetFilters')}
           </button>
         </div>
       )}
