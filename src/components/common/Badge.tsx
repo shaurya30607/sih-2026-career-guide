@@ -25,9 +25,9 @@ export const Badge: React.FC<BadgeProps> = ({
     .join(' ');
 
   return (
-    <span className={classes}>
-      {icon && <span aria-hidden="true" style={{ display: 'inline-flex' }}>{icon}</span>}
-      <span>{children}</span>
+    <span className={classes} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+      {icon && <span aria-hidden="true" style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>}
+      <span style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>{children}</span>
     </span>
   );
 };

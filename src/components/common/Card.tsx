@@ -57,16 +57,16 @@ export const Card: React.FC<CardProps> = ({
     >
       {hasHeader && (
         <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {icon && <div className="card-icon-wrapper" aria-hidden="true">{icon}</div>}
+          <div className="card-header-main" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+            {icon && <div className="card-icon-wrapper" aria-hidden="true" style={{ flexShrink: 0 }}>{icon}</div>}
             {(title || subtitle) && (
-              <div className="card-title-group">
+              <div className="card-title-group" style={{ flex: 1, minWidth: 0 }}>
                 {title && <h3 className="card-title">{title}</h3>}
                 {subtitle && <p className="card-subtitle">{subtitle}</p>}
               </div>
             )}
           </div>
-          {badge && <div>{badge}</div>}
+          {badge && <div className="card-header-badge" style={{ flexShrink: 0, display: 'flex', alignItems: 'flex-start', marginLeft: '0.5rem' }}>{badge}</div>}
         </div>
       )}
       <div className="card-body">{children}</div>
