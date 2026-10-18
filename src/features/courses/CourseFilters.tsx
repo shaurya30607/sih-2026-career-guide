@@ -30,111 +30,51 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
   );
 
   return (
-    <div
-      className="course-filters"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '1.25rem 1.5rem',
-        marginBottom: '1.5rem',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-      }}
-    >
-      {/* Search Input Bar */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div
-          style={{
-            flex: 1,
-            minWidth: 260,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+    <div className="taste-filters-panel" aria-label="Course Filters Panel">
+      {/* Search Input and Saved Toggle Row */}
+      <div className="taste-search-row">
+        <div className="taste-search-input-wrapper">
           <Search
             size={18}
             aria-hidden="true"
             style={{
               position: 'absolute',
-              left: '12px',
-              color: 'var(--color-text-muted)',
+              left: '14px',
+              color: 'var(--color-muted, #6a7186)',
               pointerEvents: 'none',
             }}
           />
           <input
             type="text"
+            className="taste-search-input"
             value={filters.searchQuery || ''}
             onChange={(e) => onFilterChange({ ...filters, searchQuery: e.target.value })}
-            placeholder="Search by course title, skill (e.g. BMS, Solar, G-code), or job role..."
+            placeholder="Search qualifications, skills (EV, Solar, CNC, Lab), or job role..."
             aria-label="Search courses"
-            style={{
-              width: '100%',
-              padding: '0.625rem 2.25rem 0.625rem 2.375rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border-strong)',
-              backgroundColor: 'var(--color-bg)',
-              fontSize: '0.875rem',
-              color: 'var(--color-text-primary)',
-            }}
           />
           {filters.searchQuery && (
             <button
               type="button"
+              className="taste-search-clear-btn"
               onClick={() => onFilterChange({ ...filters, searchQuery: '' })}
-              aria-label="Clear search input"
-              style={{
-                position: 'absolute',
-                right: '10px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--color-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
+              aria-label="Clear search"
             >
               <X size={16} />
             </button>
           )}
         </div>
 
-        {/* Bookmarked Filter Pill */}
+        {/* Saved Courses Toggle */}
         <button
           type="button"
           onClick={() => onFilterChange({ ...filters, bookmarkedOnly: !filters.bookmarkedOnly })}
           aria-pressed={Boolean(filters.bookmarkedOnly)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.375rem',
-            padding: '0.5rem 0.875rem',
-            borderRadius: 'var(--radius-md)',
-            border: `1px solid ${filters.bookmarkedOnly ? 'var(--color-primary)' : 'var(--color-border)'}`,
-            backgroundColor: filters.bookmarkedOnly ? 'var(--color-primary-subtle)' : 'var(--color-bg)',
-            color: filters.bookmarkedOnly ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-            fontWeight: 500,
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            transition: 'all 150ms ease',
-          }}
+          className={`taste-saved-toggle-btn ${filters.bookmarkedOnly ? 'active' : ''}`}
         >
           <BookmarkCheck size={16} aria-hidden="true" />
           <span>Saved Courses</span>
           {bookmarkedCount > 0 && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--color-primary)',
-                color: '#ffffff',
-                borderRadius: '9999px',
-                padding: '1px 6px',
-                fontWeight: 700,
-              }}
-            >
+            <span className="taste-saved-count">
               {bookmarkedCount}
             </span>
           )}
@@ -144,46 +84,25 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {hasActiveFilters && (
           <button
             type="button"
+            className="taste-clear-filters-btn"
             onClick={onClearFilters}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid transparent',
-              backgroundColor: 'transparent',
-              color: 'var(--color-error)',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
           >
-            <RotateCcw size={14} aria-hidden="true" />
-            <span>Reset Filters</span>
+            <RotateCcw size={14} aria-hidden="true" style={{ display: 'inline', marginRight: 4 }} />
+            Reset Filters
           </button>
         )}
       </div>
 
-      {/* Filter Chips: Sectors / Vocational Streams */}
+      {/* Stream Tabs */}
       <div>
-        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-          Vocational Sector:
+        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted, #6a7186)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Vocational Sector
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="taste-stream-tabs">
           <button
             type="button"
+            className={`taste-stream-tab ${!filters.stream ? 'active' : ''}`}
             onClick={() => onFilterChange({ ...filters, stream: undefined })}
-            style={{
-              padding: '0.375rem 0.75rem',
-              borderRadius: 'var(--radius-full)',
-              border: `1px solid ${!filters.stream ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              backgroundColor: !filters.stream ? 'var(--color-primary)' : 'var(--color-surface)',
-              color: !filters.stream ? '#ffffff' : 'var(--color-text-primary)',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
           >
             All Sectors
           </button>
@@ -194,17 +113,8 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
               <button
                 key={st.key}
                 type="button"
+                className={`taste-stream-tab ${isSelected ? 'active' : ''}`}
                 onClick={() => onFilterChange({ ...filters, stream: isSelected ? undefined : st.key })}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  borderRadius: 'var(--radius-full)',
-                  border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  backgroundColor: isSelected ? 'var(--color-primary-subtle)' : 'var(--color-surface)',
-                  color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  fontSize: '0.8125rem',
-                  fontWeight: isSelected ? 600 : 500,
-                  cursor: 'pointer',
-                }}
               >
                 {st.shortLabel}
               </button>
@@ -213,112 +123,79 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         </div>
       </div>
 
-      {/* Secondary Filter Row: Education Level, Duration & Mode */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          paddingTop: '0.75rem',
-          borderTop: '1px solid var(--color-border-subtle)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          {/* Education Level Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <label htmlFor="filter-min-edu" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-              Min Education:
-            </label>
-            <select
-              id="filter-min-edu"
-              value={filters.minEducation || ''}
-              onChange={(e) =>
-                onFilterChange({
-                  ...filters,
-                  minEducation: e.target.value ? (e.target.value as EducationLevelRequired) : undefined,
-                })
-              }
-              style={{
-                fontSize: '0.8125rem',
-                padding: '0.3rem 0.5rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <option value="">Any Qualification</option>
-              <option value="10th_pass">10th Pass (SSC)</option>
-              <option value="12th_pass">12th Pass (HSC)</option>
-            </select>
-          </div>
-
-          {/* Max Duration Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <label htmlFor="filter-duration" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-              Duration:
-            </label>
-            <select
-              id="filter-duration"
-              value={filters.maxDurationMonths || ''}
-              onChange={(e) =>
-                onFilterChange({
-                  ...filters,
-                  maxDurationMonths: e.target.value ? Number(e.target.value) : undefined,
-                })
-              }
-              style={{
-                fontSize: '0.8125rem',
-                padding: '0.3rem 0.5rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <option value="">Any Duration</option>
-              <option value="4">Up to 4 Months</option>
-              <option value="6">Up to 6 Months</option>
-              <option value="8">Up to 8 Months</option>
-            </select>
-          </div>
-
-          {/* Training Mode */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <label htmlFor="filter-mode" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-              Mode:
-            </label>
-            <select
-              id="filter-mode"
-              value={filters.trainingMode || ''}
-              onChange={(e) =>
-                onFilterChange({
-                  ...filters,
-                  trainingMode: e.target.value ? (e.target.value as 'offline' | 'online' | 'hybrid') : undefined,
-                })
-              }
-              style={{
-                fontSize: '0.8125rem',
-                padding: '0.3rem 0.5rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              <option value="">Any Mode</option>
-              <option value="offline">Offline Workshop</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="online">Online</option>
-            </select>
-          </div>
+      {/* Secondary Dropdown Filter Strip */}
+      <div className="taste-filter-dropdowns">
+        {/* Education Level Selector */}
+        <div className="taste-filter-select-group">
+          <label htmlFor="filter-min-edu" className="taste-filter-select-label">
+            Min Education:
+          </label>
+          <select
+            id="filter-min-edu"
+            className="taste-filter-select"
+            value={filters.minEducation || ''}
+            onChange={(e) =>
+              onFilterChange({
+                ...filters,
+                minEducation: e.target.value ? (e.target.value as EducationLevelRequired) : undefined,
+              })
+            }
+          >
+            <option value="">Any Qualification</option>
+            <option value="10th_pass">10th Pass (SSC)</option>
+            <option value="12th_pass">12th Pass (HSC)</option>
+          </select>
         </div>
 
-        {/* Results Counter */}
-        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-          Showing {filteredCoursesCount} of {totalCoursesCount} vocational courses
+        {/* Max Duration Selector */}
+        <div className="taste-filter-select-group">
+          <label htmlFor="filter-duration" className="taste-filter-select-label">
+            Duration:
+          </label>
+          <select
+            id="filter-duration"
+            className="taste-filter-select"
+            value={filters.maxDurationMonths || ''}
+            onChange={(e) =>
+              onFilterChange({
+                ...filters,
+                maxDurationMonths: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+          >
+            <option value="">Any Duration</option>
+            <option value="4">Up to 4 Months</option>
+            <option value="6">Up to 6 Months</option>
+            <option value="8">Up to 8 Months</option>
+          </select>
+        </div>
+
+        {/* Training Mode */}
+        <div className="taste-filter-select-group">
+          <label htmlFor="filter-mode" className="taste-filter-select-label">
+            Mode:
+          </label>
+          <select
+            id="filter-mode"
+            className="taste-filter-select"
+            value={filters.trainingMode || ''}
+            onChange={(e) =>
+              onFilterChange({
+                ...filters,
+                trainingMode: e.target.value ? (e.target.value as 'offline' | 'online' | 'hybrid') : undefined,
+              })
+            }
+          >
+            <option value="">Any Mode</option>
+            <option value="offline">Offline Workshop</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="online">Online</option>
+          </select>
+        </div>
+
+        {/* Count Indicator */}
+        <div style={{ marginLeft: 'auto', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-muted, #6a7186)' }}>
+          {filteredCoursesCount} of {totalCoursesCount} qualifications listed
         </div>
       </div>
     </div>

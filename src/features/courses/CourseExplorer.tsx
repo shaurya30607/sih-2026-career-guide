@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sparkles, FilterX, SlidersHorizontal } from 'lucide-react';
+import { FilterX, SlidersHorizontal } from 'lucide-react';
 import { Course, CourseFilter } from '../../types/course';
-import { PageHeader } from '../../components/common/PageHeader';
-import { Badge } from '../../components/common/Badge';
-import { Button } from '../../components/common/Button';
 import { CourseCard } from './CourseCard';
 import { CourseFilters } from './CourseFilters';
 import { CourseDetails } from './CourseDetails';
@@ -78,29 +75,34 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
   }
 
   return (
-    <div className="course-explorer-page">
-      {/* Header */}
-      <PageHeader
-        title="Explore Vocational Courses"
-        description="Search accredited skill-development courses in Maharashtra and nationwide. Compare curriculum, duration, entry wages, and industry affiliations."
-        badge={
-          <Badge variant="primary" size="md" icon={<Sparkles size={14} />}>
-            Verified NSQF & NCVET Courses
-          </Badge>
-        }
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<SlidersHorizontal size={14} />}
+    <div className="taste-explorer-page">
+      {/* Editorial Register Masthead */}
+      <div className="taste-explorer-masthead">
+        <div>
+          <h1 className="taste-explorer-title">Vocational Course Register</h1>
+          <p className="taste-explorer-standfirst">
+            Accredited technical qualifications across India. Compare regulated NSQF qualification tiers, dual-system apprenticeships, and university credit bridges.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <span className="taste-explorer-meta-count">
+            {filteredCourses.length} of {courses.length} Accredited Qualifications
+          </span>
+
+          <button
+            type="button"
+            className="taste-btn-primary"
+            style={{ padding: '10px 18px', fontSize: '0.875rem' }}
             onClick={onNavigateToOnboarding}
           >
+            <SlidersHorizontal size={15} />
             Personalize Preferences
-          </Button>
-        }
-      />
+          </button>
+        </div>
+      </div>
 
-      {/* Search and Filter Controls */}
+      {/* Filter Strip */}
       <CourseFilters
         filters={filters}
         onFilterChange={setFilters}
@@ -110,9 +112,9 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
         bookmarkedCount={bookmarkedIds.size}
       />
 
-      {/* Course Cards Grid - 2 columns on desktop */}
+      {/* Course Specimen Grid */}
       {filteredCourses.length > 0 ? (
-        <div className="course-cards-grid">
+        <div className="taste-specimen-grid">
           {filteredCourses.map((course) => (
             <CourseCard
               key={course.id}
@@ -124,59 +126,26 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
           ))}
         </div>
       ) : (
-        /* Empty Results State */
-        <div
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            border: '1px dashed var(--color-border-strong)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '3rem 2rem',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '1rem',
-          }}
-        >
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              backgroundColor: 'var(--color-surface-muted)',
-              color: 'var(--color-text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+        /* Empty State */
+        <div className="taste-empty-register">
+          <FilterX size={36} color="var(--color-muted, #6a7186)" />
+          <h2 className="taste-empty-title">
+            No vocational courses match your current filters
+          </h2>
+          <p className="taste-empty-desc">
+            Broaden your search keywords, switch sector filters, or reset qualification requirements to view all registered options.
+          </p>
+          <button
+            type="button"
+            className="taste-btn-primary"
+            onClick={handleClearFilters}
           >
-            <FilterX size={26} />
-          </div>
-
-          <div>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.375rem' }}>
-              No vocational courses match your current filters
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', maxWidth: 440 }}>
-              Try broadening your search keywords, switching sector filters, or resetting qualification requirements.
-            </p>
-          </div>
-
-          <Button variant="primary" size="md" icon={<RotateCcwIcon />} onClick={handleClearFilters}>
             Reset All Filters
-          </Button>
+          </button>
         </div>
       )}
     </div>
   );
 };
-
-const RotateCcwIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-    <path d="M3 3v5h5" />
-  </svg>
-);
 
 export default CourseExplorer;

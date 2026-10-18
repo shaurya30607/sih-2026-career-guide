@@ -1,39 +1,50 @@
 /* SkillSaathi Design System Tokens & Global Styles */
+@import './home-taste.css';
+@import './courses-taste.css';
 
 :root {
-  /* Sans-serif system font stack (no external font service dependency) */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  /* Hanken Grotesk with system fallback */
+  --font-family-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Color Palette - Restrained Education-Technology Aesthetic */
-  /* Primary: Deep Indigo / Navy */
-  --color-primary: #1e3a8a;
-  --color-primary-hover: #172554;
-  --color-primary-active: #0f172a;
-  --color-primary-subtle: #eff6ff;
+  /* Color Palette - white-navy-tab (Navy on white with saffron/tangerine accent) */
+  /* Primary: Deep Ink Navy */
+  --color-primary: #1f2b4d;
+  --color-primary-hover: #131c33;
+  --color-primary-active: #0c1222;
+  --color-primary-subtle: #f4f4f2;
   --color-primary-text: #ffffff;
 
-  /* Secondary: Teal / Green Accent */
-  --color-secondary: #0f766e;
-  --color-secondary-hover: #115e59;
-  --color-secondary-subtle: #f0fdfa;
+  /* Secondary: Teal Accent */
+  --color-secondary: #0d7480;
+  --color-secondary-hover: #08525b;
+  --color-secondary-subtle: #edf7f8;
   --color-secondary-text: #ffffff;
 
-  /* Neutrals: Warm Off-White Grounds & White Surfaces */
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f1f5f9;
-  --color-surface-hover: #f8fafc;
+  /* Accent: Tangerine / Saffron */
+  --color-accent: #f7941d;
+  --color-accent-hover: #e08312;
+  --color-accent-text: #ffffff;
 
-  /* Text Colors */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748b;
+  /* Neutrals: Clean White Grounds & Pale Grey Steps */
+  --color-bg: #ffffff;
+  --color-surface: #f4f4f2;
+  --color-surface-muted: #e9e8e4;
+  --color-surface-hover: #ecece8;
+
+  /* Text & Ink */
+  --color-text-primary: #1f2b4d;
+  --color-text-secondary: #3b4561;
+  --color-text-muted: #6a7186;
   --color-text-inverse: #ffffff;
 
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
+  /* Inverted Field (CTA) */
+  --color-inverted-bg: #0f172a;
+  --color-inverted-ink: #ffffff;
+  --color-inverted-muted: #94a3b8;
+
+  /* Borders: solid tone steps, no thin rules or hairline borders */
+  --color-border: #e3e1dc;
+  --color-border-subtle: #edebe6;
   --color-border-strong: #cbd5e1;
 
   /* Feedback Colors */

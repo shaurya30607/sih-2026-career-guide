@@ -1,0 +1,558 @@
+/* =====================================================================
+   SkillSaathi · Taste Skill Course Register & Specimen Catalogue
+   Palette: white-navy-tab
+   Direction: editorial-report / specimen-catalogue
+   ===================================================================== */
+
+/* Explorer Container */
+.taste-explorer-page {
+  width: 100%;
+  color: var(--color-ink, #1f2b4d);
+  font-family: var(--font-family-sans);
+}
+
+/* 1. Register Masthead */
+.taste-explorer-masthead {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--color-surface, #f4f4f2);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.taste-explorer-title {
+  font-size: clamp(2rem, 3.2vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--color-ink, #1f2b4d);
+  margin: 0 0 10px 0;
+}
+
+.taste-explorer-standfirst {
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  color: var(--color-muted, #6a7186);
+  max-width: 54ch;
+  margin: 0;
+}
+
+.taste-explorer-meta-count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-muted, #6a7186);
+  background-color: var(--color-surface, #f4f4f2);
+  padding: 10px 18px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* 2. Filter Strip */
+.taste-filters-panel {
+  background-color: var(--color-surface, #f4f4f2);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.taste-search-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.taste-search-input-wrapper {
+  flex: 1;
+  min-width: 280px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.taste-search-input {
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border, #e3e1dc); /* taste-skill-ignore */
+  border-radius: 6px;
+  padding: 12px 16px 12px 42px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-ink, #1f2b4d);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.taste-search-input:focus {
+  border-color: var(--color-primary, #1f2b4d);
+}
+
+.taste-search-clear-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-muted, #6a7186);
+  display: flex;
+  align-items: center;
+}
+
+.taste-stream-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.taste-stream-tab {
+  background-color: #ffffff;
+  color: var(--color-ink, #1f2b4d);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.taste-stream-tab:hover {
+  background-color: #e9e8e4;
+}
+
+.taste-stream-tab.active {
+  background-color: var(--color-primary, #1f2b4d);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.taste-filter-dropdowns {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.taste-filter-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taste-filter-select-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted, #6a7186);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.taste-filter-select {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border, #e3e1dc); /* taste-skill-ignore */
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-ink, #1f2b4d);
+  outline: none;
+  cursor: pointer;
+}
+
+.taste-saved-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ink, #1f2b4d);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.taste-saved-toggle-btn.active {
+  background-color: var(--color-primary, #1f2b4d);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.taste-saved-count {
+  background-color: var(--color-accent, #f7941d);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.taste-clear-filters-btn {
+  background: none;
+  border: none;
+  color: var(--color-error, #dc2626);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin-left: auto;
+}
+
+/* 3. Course Specimen Card */
+.taste-specimen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.taste-specimen-card {
+  background-color: var(--color-surface, #f4f4f2);
+  border-radius: 8px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease;
+}
+
+.taste-specimen-card:hover {
+  transform: translateY(-2px);
+}
+
+.taste-specimen-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.taste-specimen-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.taste-badge-stream {
+  background-color: var(--color-primary, #1f2b4d);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.taste-badge-nsqf {
+  background-color: var(--color-accent, #f7941d);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.taste-badge-cert {
+  background-color: #ffffff;
+  color: var(--color-muted, #6a7186);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.taste-bookmark-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-muted, #6a7186);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.taste-bookmark-btn.active {
+  color: var(--color-accent, #f7941d);
+}
+
+.taste-specimen-title {
+  font-size: 1.3125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  color: var(--color-ink, #1f2b4d);
+  margin: 0 0 8px 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.taste-specimen-title:hover {
+  color: var(--color-secondary, #0d7480);
+}
+
+.taste-specimen-meta {
+  font-size: 0.875rem;
+  color: var(--color-muted, #6a7186);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.taste-specimen-desc {
+  font-size: 0.9375rem;
+  line-height: 1.48;
+  color: var(--color-text-secondary, #3b4561);
+  margin: 0 0 18px 0;
+}
+
+.taste-specimen-ledger-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background-color: #ffffff;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.taste-ledger-mini-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.taste-mini-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted, #6a7186);
+  margin-bottom: 2px;
+}
+
+.taste-mini-value {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-ink, #1f2b4d);
+}
+
+.taste-mini-value.accent {
+  color: var(--color-accent, #f7941d);
+}
+
+.taste-specimen-skills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.taste-specimen-skill-tag {
+  background-color: #ffffff;
+  color: var(--color-ink, #1f2b4d);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.taste-specimen-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.taste-specimen-inspect-btn {
+  background-color: var(--color-primary, #1f2b4d);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.taste-specimen-inspect-btn:hover {
+  background-color: var(--color-primary-hover, #131c33);
+}
+
+/* Empty State */
+.taste-empty-register {
+  background-color: var(--color-surface, #f4f4f2);
+  border-radius: 8px;
+  padding: 64px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.taste-empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-ink, #1f2b4d);
+  margin: 0;
+}
+
+.taste-empty-desc {
+  font-size: 0.9375rem;
+  color: var(--color-muted, #6a7186);
+  max-width: 44ch;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* 4. Course Details Dossier */
+.taste-dossier-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.taste-dossier-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.taste-back-btn {
+  background: none;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-ink, #1f2b4d);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.taste-dossier-masthead {
+  background-color: var(--color-surface, #f4f4f2);
+  border-radius: 8px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.taste-dossier-title {
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--color-ink, #1f2b4d);
+  margin: 0;
+}
+
+.taste-dossier-subtitle {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--color-muted, #6a7186);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.taste-dossier-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.taste-dossier-panel {
+  background-color: var(--color-surface, #f4f4f2);
+  border-radius: 8px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.taste-dossier-section-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-ink, #1f2b4d);
+  letter-spacing: -0.02em;
+  margin: 0 0 12px 0;
+}
+
+.taste-dossier-highlight-card {
+  background-color: var(--color-primary, #1f2b4d);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.taste-dossier-highlight-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.taste-dossier-highlight-desc {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .taste-specimen-grid {
+    grid-template-columns: 1fr;
+  }
+  .taste-dossier-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .taste-filters-panel {
+    padding: 16px;
+  }
+  .taste-filter-dropdowns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .taste-filter-select {
+    width: 100%;
+  }
+  .taste-specimen-card {
+    padding: 20px;
+  }
+  .taste-dossier-masthead {
+    padding: 24px;
+  }
+  .taste-dossier-panel {
+    padding: 20px;
+  }
+}
