@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <ellipse cx="40" cy="22" rx="24" ry="9" fill="#CCFBF1" stroke="#0D9488" stroke-width="2.5"/>
+  <path d="M 16 22 L 16 38 A 24 9 0 0 0 64 38 L 64 22 Z" fill="#F0FDFA" stroke="#0D9488" stroke-width="2.5"/>
+  <path d="M 16 38 L 16 54 A 24 9 0 0 0 64 54 L 64 38 Z" fill="#E0F2FE" stroke="#0B132B" stroke-width="2.5"/>
+  <!-- Magnifying check glass -->
+  <circle cx="52" cy="52" r="10" fill="#FFFFFF" stroke="#0B132B" stroke-width="2"/>
+  <line x1="59" y1="59" x2="68" y2="68" stroke="#0B132B" stroke-width="3" stroke-linecap="round"/>
+</svg>

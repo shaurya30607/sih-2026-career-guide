@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Heatmap Matrix Grid -->
+  <!-- Row 1 -->
+  <rect x="20" y="20" width="22" height="22" rx="4" fill="#0D9488"/>
+  <rect x="48" y="20" width="22" height="22" rx="4" fill="#2DD4BF"/>
+  <rect x="76" y="20" width="22" height="22" rx="4" fill="#99F6E4"/>
+  
+  <!-- Row 2 -->
+  <rect x="20" y="48" width="22" height="22" rx="4" fill="#F43F5E"/>
+  <rect x="48" y="48" width="22" height="22" rx="4" fill="#FB7185"/>
+  <rect x="76" y="48" width="22" height="22" rx="4" fill="#0D9488"/>
+  
+  <!-- Row 3 -->
+  <rect x="20" y="76" width="22" height="22" rx="4" fill="#0B132B"/>
+  <rect x="48" y="76" width="22" height="22" rx="4" fill="#FDA4AF"/>
+  <rect x="76" y="76" width="22" height="22" rx="4" fill="#2DD4BF"/>
+
+  <!-- Analytic Trendline Overlay -->
+  <path d="M 22 84 Q 50 30 96 30" stroke="#0B132B" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="96" cy="30" r="5" fill="#0B132B"/>
+</svg>

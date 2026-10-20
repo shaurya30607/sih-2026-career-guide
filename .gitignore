@@ -45,3 +45,15 @@ dist-ssr/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Python & SQLite
+*.db
+*.sqlite3
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/.env
+.venv/
+venv/
+env/
+

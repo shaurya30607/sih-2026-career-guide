@@ -24,4 +24,13 @@ export const ENDPOINTS = {
     STREAMS: '/analytics/streams',
     CONSENSUS: '/analytics/consensus',
   },
+  HEALTH: '/health',
+  FAMILIES: {
+    CREATE: '/families',
+    STUDENT: (familyId: string) => `/families/${familyId}/student`,
+    PARENT: (familyId: string) => `/families/${familyId}/parent`,
+    ANALYZE: (familyId: string) => `/families/${familyId}/analyze`,
+    SUMMARY: (familyId: string) => `/families/${familyId}/summary`,
+    CONFIDENCE: (familyId: string) => `/families/${familyId}/confidence`,
+  },
 } as const;

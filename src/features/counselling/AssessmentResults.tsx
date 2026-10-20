@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Compass,
@@ -14,15 +14,26 @@ import {
   HelpCircle,
   ShieldCheck,
   Edit3,
+  RefreshCw,
+  Scale,
+  MessageSquare,
+  AlertTriangle,
+  Info,
+  Award,
+  Send,
+  Check,
 } from 'lucide-react';
-import { AssessmentLanguage, AssessmentResultsData, LocalizedString } from './assessmentTypes';
+import { AssessmentLanguage, AssessmentResultsData, LocalizedString, AssessmentAnswers } from './assessmentTypes';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { CounsellorRequestForm } from './CounsellorRequestForm';
+import { familyConsensusService, FamilyConsensusResult } from '../../services/api/familyConsensusService';
 
 export interface AssessmentResultsProps {
   results: AssessmentResultsData;
   language: AssessmentLanguage;
+  answers?: AssessmentAnswers;
+  familyId?: string;
   onExploreCourses: () => void;
   onViewCourseDetails: (courseId: string) => void;
   onChangeAnswers: () => void;
@@ -39,6 +50,8 @@ function resolveLocalized(loc: LocalizedString | undefined, lang: AssessmentLang
 export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   results,
   language,
+  answers,
+  familyId,
   onExploreCourses,
   onViewCourseDetails,
   onChangeAnswers,
@@ -48,6 +61,146 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const isHi = language === 'hi';
   const [showCounsellorModal, setShowCounsellorModal] = useState<boolean>(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState<boolean>(false);
+  const [consensusResult, setConsensusResult] = useState<FamilyConsensusResult | null>(null);
+  const [isLoadingConsensus, setIsLoadingConsensus] = useState<boolean>(false);
+
+  // Actual Post-Guidance Self-Reported Confidence Tracking (Opt-In)
+  const [postConfidenceScore, setPostConfidenceScore] = useState<number>(8);
+  const [postConfidenceRole, setPostConfidenceRole] = useState<'student' | 'parent' | 'joint'>('student');
+  const [postConfidenceFeedback, setPostConfidenceFeedback] = useState<string>('');
+  const [isSubmittingConfidence, setIsSubmittingConfidence] = useState<boolean>(false);
+  const [confidenceSuccessMsg, setConfidenceSuccessMsg] = useState<string | null>(null);
+
+  const handleSubmitPostConfidence = async () => {
+    const activeFamilyId =
+      consensusResult?.summary?.family_id ||
+      familyId ||
+      (typeof window !== 'undefined' && window.sessionStorage
+        ? window.sessionStorage.getItem('skillsaathi_active_family_id')
+        : null);
+
+    if (!activeFamilyId) return;
+
+    setIsSubmittingConfidence(true);
+    try {
+      const res = await familyConsensusService.submitPostConfidence(
+        activeFamilyId,
+        postConfidenceRole,
+        postConfidenceScore,
+        postConfidenceFeedback
+      );
+
+      if (res) {
+        setConfidenceSuccessMsg(res.delta_message);
+        if (consensusResult && consensusResult.summary) {
+          setConsensusResult({
+            ...consensusResult,
+            summary: {
+              ...consensusResult.summary,
+              post_confidence_student:
+                postConfidenceRole === 'parent'
+                  ? consensusResult.summary.post_confidence_student
+                  : res.post_score,
+              post_confidence_parent:
+                postConfidenceRole === 'student'
+                  ? consensusResult.summary.post_confidence_parent
+                  : res.post_score,
+              confidence_delta: res.delta,
+              confidence_status: 'actual_delta_recorded',
+            },
+          });
+        }
+      } else {
+        const pre = consensusResult?.summary?.pre_confidence_student || 6.0;
+        const actualDelta = Number((postConfidenceScore - pre).toFixed(1));
+        const deltaMsg =
+          actualDelta > 0
+            ? `Self-reported confidence improved by +${actualDelta} points (from ${pre} to ${postConfidenceScore}/10).`
+            : `Self-reported confidence recorded at ${postConfidenceScore}/10.`;
+        setConfidenceSuccessMsg(deltaMsg);
+        if (consensusResult && consensusResult.summary) {
+          setConsensusResult({
+            ...consensusResult,
+            summary: {
+              ...consensusResult.summary,
+              post_confidence_student: postConfidenceScore,
+              confidence_delta: actualDelta,
+              confidence_status: 'actual_delta_recorded',
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to submit post-confidence', err);
+    } finally {
+      setIsSubmittingConfidence(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingConsensus(true);
+
+    const activeFamilyId =
+      familyId ||
+      (typeof window !== 'undefined' && window.sessionStorage
+        ? window.sessionStorage.getItem('skillsaathi_active_family_id')
+        : null);
+
+    const loadOrRun = async () => {
+      // 1. Attempt to fetch stored summary from backend first if familyId is known
+      if (activeFamilyId) {
+        try {
+          const stored = await familyConsensusService.getFamilySummary(activeFamilyId);
+          if (stored && stored.summary && isMounted) {
+            setConsensusResult(stored);
+            setIsLoadingConsensus(false);
+            return;
+          }
+        } catch {
+          // Proceed to run fresh consensus
+        }
+      }
+
+      // 2. Run consensus engine
+      try {
+        const res = await familyConsensusService.runFamilyConsensus(answers || {}, language);
+        if (isMounted) {
+          setConsensusResult(res);
+          setIsLoadingConsensus(false);
+          if (res.summary?.family_id && typeof window !== 'undefined' && window.sessionStorage) {
+            window.sessionStorage.setItem('skillsaathi_active_family_id', res.summary.family_id);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setIsLoadingConsensus(false);
+        }
+      }
+    };
+
+    loadOrRun();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [answers, language, familyId]);
+
+  const handleRefreshConsensus = () => {
+    setIsLoadingConsensus(true);
+    familyConsensusService
+      .runFamilyConsensus(answers || {}, language)
+      .then((res) => {
+        setConsensusResult(res);
+        setIsLoadingConsensus(false);
+        if (res.summary?.family_id && typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem('skillsaathi_active_family_id', res.summary.family_id);
+        }
+      })
+      .catch(() => {
+        setIsLoadingConsensus(false);
+      });
+  };
 
   const recommendations = results.recommendations || [];
   const summary = results.summary;
@@ -509,6 +662,885 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
             </Button>
           </div>
         )}
+      </section>
+
+      {/* ========================================================
+          SECTION C.2 — Family Consensus Intelligence & Joint Decision Support
+         ======================================================== */}
+      <section
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '2.25rem 2rem',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+        }}
+      >
+        {/* Section Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.5rem' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-primary)',
+                }}
+              >
+                <Users size={20} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: 0 }}>
+                  {isHi
+                    ? 'पारिवारिक सहमति इंटेलिजेंस'
+                    : isMr
+                    ? 'कौटुंबिक सहमती इंटेलिजन्स'
+                    : 'Family Consensus Intelligence'}
+                </h2>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                  {isHi
+                    ? 'छात्र आकांक्षाओं और माता-पिता की प्राथमिकताओं का वस्तुनिष्ठ विश्लेषण'
+                    : isMr
+                    ? 'विद्यार्थ्यांची आवड आणि पालकांच्या सुरक्षिततेची वस्तुनिष्ठ तुलना'
+                    : 'Evidence-grounded comparison bridging student aspirations and parental priorities'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
+            {consensusResult?.mode === 'live' ? (
+              <Badge variant="success" size="sm">
+                <CheckCircle2 size={13} style={{ marginRight: '4px' }} />
+                <span>Live FastAPI Backend</span>
+              </Badge>
+            ) : (
+              <Badge variant="neutral" size="sm">
+                <span>Demo Consensus Mode</span>
+              </Badge>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshConsensus}
+              disabled={isLoadingConsensus}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8125rem' }}
+            >
+              <RefreshCw size={13} style={{ marginRight: '5px' }} className={isLoadingConsensus ? 'animate-spin' : ''} />
+              {isLoadingConsensus ? 'Analyzing...' : 'Refresh Consensus'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Loading State for Consensus Analysis */}
+        {isLoadingConsensus && !consensusResult && (
+          <div
+            style={{
+              padding: '2.5rem 1.5rem',
+              textAlign: 'center',
+              backgroundColor: '#f8fafc',
+              borderRadius: '12px',
+              border: '1px dashed var(--color-border, #cbd5e1)',
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', fontWeight: 600 }}>
+              <RefreshCw size={18} className="animate-spin" />
+              <span>
+                {isHi
+                  ? 'पारिवारिक सहमति का विश्लेषण किया जा रहा है...'
+                  : isMr
+                  ? 'कौटुंबिक सहमतीचे विश्लेषण सुरू आहे...'
+                  : 'Analyzing Family Consensus & Multi-Criteria Trade-offs...'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted, #64748b)', margin: '8px 0 0 0' }}>
+              {isHi
+                ? 'फास्टएपीआई बैकएंड छात्र और माता-पिता के प्रोफाइलों की तुलना कर रहा है।'
+                : isMr
+                ? 'फास्टएपीआय बॅकएंड विद्यार्थी आणि पालकांच्या प्रोफाइलची तुलना करत आहे.'
+                : 'FastAPI backend engine is evaluating compatibility, detecting disagreements, and mapping career pathways.'}
+            </p>
+          </div>
+        )}
+
+        {/* Offline / Backend Unavailable Banner */}
+        {!isLoadingConsensus && !consensusResult && (
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              backgroundColor: '#fffbeb',
+              borderRadius: '12px',
+              border: '1px solid #fde68a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <strong style={{ color: '#92400e', fontSize: '0.9375rem' }}>
+                {isHi ? 'बैकएंड सेवा अनुपलब्ध है' : isMr ? 'बॅकएंड सेवा अनुपलब्ध आहे' : 'FastAPI Backend Service Offline'}
+              </strong>
+              <p style={{ color: '#b45309', fontSize: '0.8125rem', margin: '4px 0 0 0' }}>
+                {isHi
+                  ? 'स्थानीय फास्टएपीआई बैकएंड (http://127.0.0.1:8000) से कनेक्ट नहीं हो सका। कृपया सर्वर पुनः जांचें।'
+                  : isMr
+                  ? 'स्थानिक फास्टएपीआय बॅकएंडशी (http://127.0.0.1:8000) संपर्क होऊ शकला नाही. कृपया सर्व्हर तपासा.'
+                  : 'Unable to reach local FastAPI backend server at http://127.0.0.1:8000. Start backend server or retry.'}
+              </p>
+            </div>
+            <Button variant="primary" size="sm" onClick={handleRefreshConsensus}>
+              {isHi ? 'पुनः प्रयास करें' : isMr ? 'पुन्हा प्रयत्न करा' : 'Retry'}
+            </Button>
+          </div>
+        )}
+
+        {/* Readiness Status Banner */}
+        {consensusResult?.summary && (
+          <div
+            style={{
+              padding: '1rem 1.25rem',
+              borderRadius: '12px',
+              backgroundColor:
+                consensusResult.summary.overall_consensus_readiness === 'high'
+                  ? 'rgba(16, 185, 129, 0.08)'
+                  : consensusResult.summary.overall_consensus_readiness === 'moderate'
+                  ? 'rgba(245, 158, 11, 0.08)'
+                  : 'rgba(239, 68, 68, 0.08)',
+              border:
+                consensusResult.summary.overall_consensus_readiness === 'high'
+                  ? '1px solid rgba(16, 185, 129, 0.25)'
+                  : consensusResult.summary.overall_consensus_readiness === 'moderate'
+                  ? '1px solid rgba(245, 158, 11, 0.25)'
+                  : '1px solid rgba(239, 68, 68, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Scale size={20} style={{ color: 'var(--color-primary)' }} />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <strong style={{ fontSize: '0.9375rem', color: 'var(--color-text-primary)' }}>
+                    Consensus Readiness:{' '}
+                    {consensusResult.summary.overall_consensus_readiness === 'high'
+                      ? 'High Alignment'
+                      : consensusResult.summary.overall_consensus_readiness === 'moderate'
+                      ? 'Moderate Alignment'
+                      : 'Dialogue Recommended'}
+                  </strong>
+                  {consensusResult.summary.family_id && (
+                    <Badge variant="neutral" size="sm">
+                      ID: {consensusResult.summary.family_id.slice(0, 8)}
+                    </Badge>
+                  )}
+                  <Badge variant={consensusResult.summary.counselling_mode === 'ai_grounded' ? 'primary' : 'neutral'} size="sm">
+                    {consensusResult.summary.counselling_mode === 'ai_grounded'
+                      ? 'Grounded AI (Gemini)'
+                      : 'Deterministic Consensus Engine'}
+                  </Badge>
+                </div>
+                <p style={{ margin: '0.125rem 0 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+                  {consensusResult.summary.overall_consensus_readiness === 'high'
+                    ? 'Both student passions and parent stability concerns converge strongly on accredited pathways.'
+                    : consensusResult.summary.overall_consensus_readiness === 'moderate'
+                    ? 'Core technical interest aligns; structured discussion recommended on fee ceilings and degree credit progression.'
+                    : 'Explicit differences in sector or time-to-earn identified. Review the resolution pathways below.'}
+                </p>
+                {consensusResult.summary.counselling_mode_note && (
+                  <div style={{ marginTop: '0.375rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Info size={12} style={{ flexShrink: 0 }} />
+                    <span>{consensusResult.summary.counselling_mode_note}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {consensusResult.summary.pre_confidence_student !== undefined && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                Baseline Confidence — Student: {consensusResult.summary.pre_confidence_student}/10 | Parent:{' '}
+                {consensusResult.summary.pre_confidence_parent || 5.5}/10
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Stated Priorities Comparison (Student vs Parent) */}
+        {consensusResult?.summary && (consensusResult.summary.student_priorities || consensusResult.summary.parent_priorities) && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '1.25rem',
+            }}
+          >
+            {/* Student Priorities */}
+            <div
+              style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.04)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={16} style={{ color: '#2563eb' }} />
+                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                  {isHi ? 'छात्र की प्राथमिकताएं और आकांक्षाएं' : isMr ? 'विद्यार्थ्याची आवड आणि उद्दिष्टे' : 'Student Aspirations & Priorities'}
+                </h3>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {(consensusResult.summary.student_priorities || []).map((item, idx) => (
+                  <li key={idx} style={{ fontSize: '0.78125rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Parent Priorities */}
+            <div
+              style={{
+                backgroundColor: 'rgba(16, 185, 129, 0.04)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldCheck size={16} style={{ color: '#059669' }} />
+                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                  {isHi ? 'अभिभावक की चिंताएं और प्राथमिकताएं' : isMr ? 'पालकांची सुरक्षितता आणि प्राधान्यक्रम' : 'Parent Considerations & Priorities'}
+                </h3>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {(consensusResult.summary.parent_priorities || []).map((item, idx) => (
+                  <li key={idx} style={{ fontSize: '0.78125rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* 2-Column Grid: Shared Strengths vs Disagreements */}
+        {consensusResult?.summary && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '1.25rem',
+            }}
+          >
+            {/* Card 1: Agreed Common Ground */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.875rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} style={{ color: 'var(--color-success, #16a34a)' }} />
+                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                  Agreed Common Ground ({consensusResult.summary.shared_strengths.length})
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {consensusResult.summary.shared_strengths.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <strong style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)' }}>{item.topic}</strong>
+                      <span style={{ fontSize: '0.6875rem', color: 'var(--color-success)', fontWeight: 700 }}>
+                        {Math.round(item.alignment_score * 100)}% Match
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                      {item.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 2: Identified Disagreements & Resolution */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.875rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={16} style={{ color: 'var(--color-warning, #d97706)' }} />
+                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                  Stated Differences & Resolution Pathways ({consensusResult.summary.identified_disagreements.length})
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {consensusResult.summary.identified_disagreements.map((d, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.375rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)' }}>{d.topic}</strong>
+                      <Badge variant={d.severity === 'high' ? 'secondary' : 'warning'} size="sm">
+                        {d.severity.toUpperCase()}
+                      </Badge>
+                    </div>
+
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                      <div>
+                        <strong>Student:</strong> {d.student_stance}
+                      </div>
+                      <div style={{ marginTop: '2px' }}>
+                        <strong>Parent:</strong> {d.parent_stance}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: '0.25rem',
+                        padding: '0.375rem 0.5rem',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(13, 148, 136, 0.06)',
+                        borderLeft: '2px solid var(--color-primary)',
+                        fontSize: '0.6875rem',
+                        color: 'var(--color-primary)',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      <strong>Resolution:</strong> {d.resolution_pathway}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Side-by-Side Pathway Comparison Card */}
+        {consensusResult?.summary?.pathway_comparison && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1.5px solid var(--color-primary-subtle, #99f6e4)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Scale size={18} style={{ color: 'var(--color-primary)' }} />
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>
+                  {isHi ? 'विकल्प तुलना: पाथवे ए बनाम पाथवे बी' : isMr ? 'पर्याय तुलना: पाथवे ए विरुद्ध पाथवे बी' : 'Side-by-Side Pathway Comparison'}
+                </h3>
+              </div>
+              <Badge variant="neutral" size="sm">
+                <span>Multi-Criteria Trade-offs</span>
+              </Badge>
+            </div>
+
+            {/* 2 Pathways Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', backgroundColor: 'rgba(13, 148, 136, 0.06)', border: '1px solid rgba(13, 148, 136, 0.2)' }}>
+                <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+                  Pathway A (Top Recommendation)
+                </div>
+                <strong style={{ fontSize: '0.9375rem', color: 'var(--color-text-primary)' }}>
+                  {consensusResult.summary.pathway_comparison.pathway_a_title}
+                </strong>
+              </div>
+              <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', backgroundColor: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase' }}>
+                  Pathway B (Alternative Option)
+                </div>
+                <strong style={{ fontSize: '0.9375rem', color: 'var(--color-text-primary)' }}>
+                  {consensusResult.summary.pathway_comparison.pathway_b_title}
+                </strong>
+              </div>
+            </div>
+
+            {/* Comparison Metrics Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Duration Comparison</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)', fontWeight: 500, marginTop: '2px' }}>
+                  {consensusResult.summary.pathway_comparison.duration_comparison}
+                </div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Fee Ceiling Comparison</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)', fontWeight: 500, marginTop: '2px' }}>
+                  {consensusResult.summary.pathway_comparison.fee_comparison}
+                </div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Wage Benchmark Indicator</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)', fontWeight: 500, marginTop: '2px' }}>
+                  {consensusResult.summary.pathway_comparison.wage_benchmark_comparison}
+                </div>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Academic / NSQF Progression</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)', fontWeight: 500, marginTop: '2px' }}>
+                  {consensusResult.summary.pathway_comparison.progression_comparison}
+                </div>
+              </div>
+            </div>
+
+            {/* Key Trade-off Summary */}
+            <div
+              style={{
+                padding: '0.875rem 1rem',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                fontSize: '0.8125rem',
+                color: 'var(--color-text-primary)',
+                lineHeight: 1.5,
+              }}
+            >
+              <strong>{isHi ? 'मुख्य विकल्प तुलना (Trade-off): ' : isMr ? 'मुख्य पर्याय तुलना (Trade-off): ' : 'Key Trade-off Summary: '}</strong>
+              <span>{consensusResult.summary.pathway_comparison.key_trade_off_summary}</span>
+            </div>
+
+            {/* Plain-Language Parent Explanations */}
+            {consensusResult.summary.pathway_comparison.affordability_explanation && (
+              <div
+                style={{
+                  padding: '0.875rem 1rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary)',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>{isHi ? 'लागत व परिवार बजट समझ (Affordability): ' : isMr ? 'खर्च व कौटुंबिक बजेट (Affordability): ' : 'Household Affordability Explanation: '}</strong>
+                <span>{consensusResult.summary.pathway_comparison.affordability_explanation}</span>
+              </div>
+            )}
+
+            {consensusResult.summary.pathway_comparison.eligibility_explanation && (
+              <div
+                style={{
+                  padding: '0.875rem 1rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary)',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>{isHi ? 'प्रवेश पात्रता (Eligibility): ' : isMr ? 'प्रवेश पात्रता (Eligibility): ' : 'Eligibility & Prerequisites: '}</strong>
+                <span>{consensusResult.summary.pathway_comparison.eligibility_explanation}</span>
+              </div>
+            )}
+
+            {/* Transparent Unknown Values Indicator */}
+            {consensusResult.summary.pathway_comparison.unknown_values_disclaimer && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(100, 116, 139, 0.08)',
+                  border: '1px dashed rgba(100, 116, 139, 0.3)',
+                  fontSize: '0.75rem',
+                  color: '#475569',
+                  lineHeight: 1.4,
+                }}
+              >
+                <strong>{isHi ? 'साक्ष्य पारदर्शिता (Unknown Values): ' : isMr ? 'माहिती पारदर्शकता (Unknown Values): ' : 'Transparency Notice on Unknown Values: '}</strong>
+                <span>{consensusResult.summary.pathway_comparison.unknown_values_disclaimer}</span>
+              </div>
+            )}
+
+            {/* Evidence Status */}
+            <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Info size={12} style={{ flexShrink: 0 }} />
+              <span>{consensusResult.summary.pathway_comparison.evidence_status}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Explainable Factors for Top Courses */}
+        {consensusResult?.summary?.top_pathway_recommendations && consensusResult.summary.top_pathway_recommendations.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>
+              {isHi ? 'कोर्स मूल्यांकन और साक्ष्य सीमाएं' : isMr ? 'अभ्यासक्रम मूल्यांकन आणि मर्यादा' : 'Explainable Course Evaluation & Evidence Boundaries'}
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              {consensusResult.summary.top_pathway_recommendations.slice(0, 2).map((rec, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '10px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.625rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>{rec.course_title}</strong>
+                    <Badge variant="primary" size="sm">Fit {rec.fit_score}%</Badge>
+                  </div>
+
+                  {/* Supporting Factors */}
+                  {rec.supporting_factors && rec.supporting_factors.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#059669', marginBottom: '2px' }}>
+                        ✓ Supporting Factors
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                        {rec.supporting_factors.map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Limiting Factors */}
+                  {rec.limiting_factors && rec.limiting_factors.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#d97706', marginBottom: '2px' }}>
+                        ⚠ Limiting Factors / Constraints
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                        {rec.limiting_factors.map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Missing Evidence Flags */}
+                  {rec.missing_evidence_flags && rec.missing_evidence_flags.length > 0 && (
+                    <div style={{ padding: '0.5rem', borderRadius: '6px', backgroundColor: 'var(--color-bg-subtle, #f8fafc)', border: '1px dashed var(--color-border)' }}>
+                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '2px' }}>
+                        Missing Evidence Flags (Verified facts only):
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+                        {rec.missing_evidence_flags.map((flag, i) => (
+                          <li key={i}>{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Unresolved Concerns Card */}
+        {consensusResult?.summary?.unresolved_concerns && consensusResult.summary.unresolved_concerns.length > 0 && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.625rem' }}>
+              <AlertCircle size={16} style={{ color: '#d97706' }} />
+              <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                {isHi ? 'अनसुलझे मुद्दे और आगामी चर्चा बिंदु' : isMr ? 'न सुटलेले प्रश्न आणि चर्चेचे मुद्दे' : 'Unresolved Family Concerns & Action Items'}
+              </h3>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              {consensusResult.summary.unresolved_concerns.map((c, idx) => (
+                <li key={idx} style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Card 3: Actionable Family Discussion Guide */}
+        {consensusResult?.summary?.discussion_guide && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <MessageSquare size={16} style={{ color: 'var(--color-primary)' }} />
+              <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
+                Recommended Family Dialogue Guide
+              </h3>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {consensusResult.summary.discussion_guide.map((step, idx) => (
+                <li key={idx} style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                  {step}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Card 4: Actual Self-Reported Post-Guidance Confidence Tracker (Opt-In) */}
+        {consensusResult?.summary && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1.5px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Award size={18} style={{ color: 'var(--color-primary)' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>
+                    {isHi
+                      ? 'काउंसलिंग के बाद विश्वास ट्रैकर (स्वैच्छिक)'
+                      : isMr
+                      ? 'सल्लामसलतीनंतरचा आत्मविश्वास ट्रॅकर (ऐच्छिक)'
+                      : 'Post-Guidance Confidence Tracker (Opt-In)'}
+                  </h3>
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+                  {isHi
+                    ? 'विकल्पों और ट्रेड-ऑफ की समीक्षा के बाद अपना वास्तविक विश्वास दर्ज करें। कोई निश्चित या कृत्रिम स्कोर नहीं बनाया जाता।'
+                    : isMr
+                    ? 'पर्याय समजून घेतल्यानंतर तुमचा प्रत्यक्ष आत्मविश्वास नोंदवा. कोणताही खोटा किंवा स्थिर स्कोअर दिला जात नाही.'
+                    : 'Report your actual confidence after reviewing trade-offs. Measured directly from user inputs (never fabricated).'}
+                </p>
+              </div>
+
+              {consensusResult.summary.confidence_status === 'actual_delta_recorded' && (
+                <Badge variant="success" size="sm">
+                  <Check size={13} style={{ marginRight: '4px' }} />
+                  <span>Actual Delta Recorded</span>
+                </Badge>
+              )}
+            </div>
+
+            {/* Display recorded delta if available */}
+            {(consensusResult.summary.confidence_delta !== undefined && consensusResult.summary.confidence_delta !== null) || confidenceSuccessMsg ? (
+              <div
+                style={{
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <CheckCircle2 size={20} style={{ color: '#059669', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ fontSize: '0.875rem', color: '#065f46' }}>
+                    {confidenceSuccessMsg ||
+                      (consensusResult.summary.confidence_delta !== undefined &&
+                      consensusResult.summary.confidence_delta !== null &&
+                      consensusResult.summary.confidence_delta > 0
+                        ? `Self-reported confidence improved by +${consensusResult.summary.confidence_delta} points.`
+                        : consensusResult.summary.confidence_delta === 0
+                        ? 'Reported confidence remained steady.'
+                        : `Reported confidence changed by ${consensusResult.summary.confidence_delta} points.`)}
+                  </strong>
+                  <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '2px' }}>
+                    Baseline Pre-Score: {consensusResult.summary.pre_confidence_student || 6.0}/10 → Recorded Post-Score:{' '}
+                    {consensusResult.summary.post_confidence_student || postConfidenceScore}/10
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Interactive Opt-In Submission Form */
+              <div
+                style={{
+                  padding: '1.25rem',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                }}
+              >
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    {isHi ? 'मूल्यांकनकर्ता:' : isMr ? 'नोंदवणारा:' : 'Rating as:'}
+                  </span>
+                  {(['student', 'parent', 'joint'] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setPostConfidenceRole(r)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid',
+                        borderColor: postConfidenceRole === r ? 'var(--color-primary)' : 'var(--color-border)',
+                        backgroundColor: postConfidenceRole === r ? 'rgba(13, 148, 136, 0.1)' : 'var(--color-surface)',
+                        color: postConfidenceRole === r ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      {isHi ? 'काउंसलिंग के बाद आत्मविश्वास स्तर (1-10):' : isMr ? 'सल्लामसलतीनंतरचा आत्मविश्वास (1-10):' : 'Self-Reported Confidence (1-10):'}
+                    </span>
+                    <strong style={{ fontSize: '0.9375rem', color: 'var(--color-primary)' }}>
+                      {postConfidenceScore} / 10
+                    </strong>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setPostConfidenceScore(score)}
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '6px',
+                          border: '1px solid',
+                          borderColor: postConfidenceScore === score ? 'var(--color-primary)' : 'var(--color-border)',
+                          backgroundColor: postConfidenceScore === score ? 'var(--color-primary)' : 'var(--color-surface)',
+                          color: postConfidenceScore === score ? '#ffffff' : 'var(--color-text-primary)',
+                          fontWeight: 700,
+                          fontSize: '0.8125rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    value={postConfidenceFeedback}
+                    onChange={(e) => setPostConfidenceFeedback(e.target.value)}
+                    placeholder={
+                      isHi
+                        ? 'वैकल्पिक टिप्पणी: किस बिंदु ने निर्णय को स्पष्ट करने में मदद की?'
+                        : isMr
+                        ? 'ऐच्छिक अभिप्राय: कोणत्या मुद्द्याने संभ्रम दूर केला?'
+                        : 'Optional reflection: What helped clarify your family decision?'
+                    }
+                    maxLength={300}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.8125rem',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text-primary)',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Send size={14} />}
+                    onClick={handleSubmitPostConfidence}
+                    disabled={isSubmittingConfidence}
+                  >
+                    {isSubmittingConfidence
+                      ? 'Saving...'
+                      : isHi
+                      ? 'विश्वास रेटिंग सहेजें'
+                      : isMr
+                      ? 'आत्मविश्वास रेटिंग जतन करा'
+                      : 'Submit Post-Counselling Rating'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Disclaimer Note */}
+        <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--color-text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
+          {consensusResult?.summary?.disclaimer ||
+            'Demonstration data based on deterministic consensus engine. Official government API integration and live district wage feeds planned for Milestone 2.'}
+        </p>
       </section>
 
       {/* ========================================================

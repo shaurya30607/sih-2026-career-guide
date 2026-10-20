@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <circle cx="60" cy="60" r="46" fill="#F0FDFA" stroke="#0D9488" stroke-width="2"/>
+  <!-- Neural Nodes -->
+  <circle cx="60" cy="32" r="7" fill="#0D9488"/>
+  <circle cx="36" cy="50" r="7" fill="#0B132B"/>
+  <circle cx="84" cy="50" r="7" fill="#0B132B"/>
+  <circle cx="44" cy="80" r="7" fill="#0D9488"/>
+  <circle cx="76" cy="80" r="7" fill="#0D9488"/>
+  <circle cx="60" cy="60" r="9" fill="#2DD4BF"/>
+  <!-- Synaptic Connectors -->
+  <line x1="60" y1="32" x2="36" y2="50" stroke="#0D9488" stroke-width="2"/>
+  <line x1="60" y1="32" x2="84" y2="50" stroke="#0D9488" stroke-width="2"/>
+  <line x1="36" y1="50" x2="60" y2="60" stroke="#0B132B" stroke-width="2"/>
+  <line x1="84" y1="50" x2="60" y2="60" stroke="#0B132B" stroke-width="2"/>
+  <line x1="60" y1="60" x2="44" y2="80" stroke="#0D9488" stroke-width="2"/>
+  <line x1="60" y1="60" x2="76" y2="80" stroke="#0D9488" stroke-width="2"/>
+  <line x1="44" y1="80" x2="76" y2="80" stroke="#64748B" stroke-width="2" stroke-dasharray="3,3"/>
+</svg>

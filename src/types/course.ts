@@ -66,6 +66,13 @@ export interface Course {
   skillsAcquired?: string[];
   careerProgression?: string;
   practicalHours?: number;
+  district?: string;
+  state?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  verificationStatus?: string;
+  lastUpdated?: string;
+  missingEvidenceFlags?: string[];
 }
 
 export interface CourseFilter {
@@ -77,4 +84,6 @@ export interface CourseFilter {
   financialAidOnly?: boolean;
   searchQuery?: string;
   bookmarkedOnly?: boolean;
+  district?: string;
+  state?: string;
 }

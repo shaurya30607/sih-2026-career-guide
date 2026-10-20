@@ -38,12 +38,20 @@ export class AssessmentService {
   /**
    * Save assessment progress to session storage
    */
-  saveSession(answers: AssessmentAnswers, activeQuestionIndex: number): void {
+  saveSession(
+    answers: AssessmentAnswers,
+    activeQuestionIndex: number,
+    isCompleted = false,
+    familyId?: string
+  ): void {
     if (typeof window === 'undefined') return;
     try {
+      const existing = this.loadSession();
       const payload = {
         answers,
         activeQuestionIndex,
+        isCompleted,
+        familyId: familyId || existing?.familyId || (typeof window !== 'undefined' ? sessionStorage.getItem('skillsaathi_active_family_id') : undefined),
         updatedAt: Date.now(),
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -55,7 +63,12 @@ export class AssessmentService {
   /**
    * Load saved assessment progress from session storage
    */
-  loadSession(): { answers: AssessmentAnswers; activeQuestionIndex: number } | null {
+  loadSession(): {
+    answers: AssessmentAnswers;
+    activeQuestionIndex: number;
+    isCompleted?: boolean;
+    familyId?: string;
+  } | null {
     if (typeof window === 'undefined') return null;
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
@@ -65,6 +78,8 @@ export class AssessmentService {
         return {
           answers: data.answers,
           activeQuestionIndex: typeof data.activeQuestionIndex === 'number' ? data.activeQuestionIndex : 0,
+          isCompleted: Boolean(data.isCompleted),
+          familyId: typeof data.familyId === 'string' ? data.familyId : undefined,
         };
       }
     } catch {

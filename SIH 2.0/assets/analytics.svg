@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <rect x="16" y="20" width="88" height="80" rx="10" fill="#F8FAFC" stroke="#0B132B" stroke-width="2.5"/>
+  <!-- Bars -->
+  <rect x="28" y="60" width="12" height="30" rx="3" fill="#64748B"/>
+  <rect x="46" y="44" width="12" height="46" rx="3" fill="#0D9488"/>
+  <rect x="64" y="32" width="12" height="58" rx="3" fill="#2DD4BF"/>
+  <rect x="82" y="52" width="12" height="38" rx="3" fill="#0B132B"/>
+  <!-- Line connecting tops -->
+  <polyline points="34,58 52,42 70,30 88,50" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" fill="none"/>
+</svg>

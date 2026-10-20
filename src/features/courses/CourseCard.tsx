@@ -78,6 +78,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 {course.certificationBody}
               </span>
             )}
+
+            {course.verificationStatus === 'verified_curriculum_framework' && (
+              <span className="taste-badge-cert" style={{ backgroundColor: 'rgba(5, 150, 105, 0.1)', color: '#059669', borderColor: 'rgba(5, 150, 105, 0.3)' }}>
+                ✓ {isHi ? 'मान्यता प्राप्त' : isMr ? 'मान्यताप्राप्त' : 'Verified'}
+              </span>
+            )}
           </div>
 
           <button
@@ -116,6 +122,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <MapPin size={13} aria-hidden="true" />
             {course.location}
           </span>
+          {course.district && (
+            <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+              ({course.district})
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -172,6 +183,38 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 +{course.skillsAcquired.length - 3} {isHi ? 'और' : isMr ? 'अधिक' : 'more'}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Verifiable Source Link and Traceability Strip */}
+        {course.sourceName && (
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '6px 10px',
+              backgroundColor: 'rgba(241, 245, 249, 0.8)',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              fontSize: '0.75rem',
+              color: '#475569',
+              lineHeight: 1.4,
+            }}
+          >
+            <strong>{isHi ? 'आधिकारिक स्रोत: ' : isMr ? 'अधिकृत स्रोत: ' : 'Official Source: '}</strong>
+            {course.sourceUrl ? (
+              <a
+                href={course.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#0284c7', textDecoration: 'underline' }}
+                title="Inspect verified qualification framework curriculum"
+              >
+                {course.sourceName}
+              </a>
+            ) : (
+              <span>{course.sourceName}</span>
+            )}
+            {course.lastUpdated && <span style={{ marginLeft: '4px', color: '#64748b' }}>({course.lastUpdated})</span>}
           </div>
         )}
       </div>

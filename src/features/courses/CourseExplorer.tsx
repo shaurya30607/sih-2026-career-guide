@@ -7,6 +7,8 @@ import { CourseDetails } from './CourseDetails';
 import { courseService } from '../../services/courses/courseService';
 import { useTranslation } from '../../i18n';
 
+import { Badge } from '../../components/common/Badge';
+
 export interface CourseExplorerProps {
   selectedCourseId?: string | null;
   onSelectCourse: (courseId: string | null) => void;
@@ -25,19 +27,27 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState<CourseFilter>({});
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isBackendLive, setIsBackendLive] = useState<boolean>(false);
 
   // Load all initial courses from service
   useEffect(() => {
+    setIsLoading(true);
     courseService.getAllCourses().then((data) => {
       setCourses(data);
       setFilteredCourses(data);
+      setIsBackendLive(courseService.isBackendLive);
+      setIsLoading(false);
     });
   }, []);
 
   // Apply filters whenever filters or courses change
   useEffect(() => {
+    setIsLoading(true);
     courseService.filterCourses(filters, bookmarkedIds).then((res) => {
       setFilteredCourses(res);
+      setIsBackendLive(courseService.isBackendLive);
+      setIsLoading(false);
     });
   }, [filters, bookmarkedIds]);
 
@@ -88,6 +98,10 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <Badge variant={isBackendLive ? 'success' : 'neutral'} size="sm">
+            {isBackendLive ? '🟢 Live FastAPI Catalog' : '🔵 Demo Catalog'}
+          </Badge>
+
           <span className="taste-explorer-meta-count">
             {t('courses.showingCount', { filtered: filteredCourses.length, total: courses.length })}
           </span>
@@ -114,8 +128,24 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
         bookmarkedCount={bookmarkedIds.size}
       />
 
-      {/* Course Specimen Grid */}
-      {filteredCourses.length > 0 ? (
+      {/* Course Specimen Grid or Loading State */}
+      {isLoading ? (
+        <div
+          style={{
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            border: '1px solid var(--color-border, #e5e5e3)',
+          }}
+        >
+          <p style={{ color: 'var(--color-text-muted, #6a7186)', fontSize: '0.9375rem', margin: 0 }}>
+            {isBackendLive
+              ? 'Querying vocational courses from FastAPI backend...'
+              : 'Loading course catalog...'}
+          </p>
+        </div>
+      ) : filteredCourses.length > 0 ? (
         <div className="taste-specimen-grid">
           {filteredCourses.map((course) => (
             <CourseCard

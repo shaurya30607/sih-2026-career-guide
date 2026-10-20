@@ -44,6 +44,9 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
       setAnswers(saved.answers);
       setActiveQuestionIndex(saved.activeQuestionIndex || 0);
       setHasSavedSession(true);
+      if (saved.isCompleted) {
+        setViewMode('results');
+      }
     } else if (courseId) {
       // If user directly clicked "Ask counsellor about this course"
       setAnswers({ q_target_course: courseId });
@@ -120,7 +123,8 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
       setActiveQuestionIndex(safeIndex + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Completed all applicable questions -> move directly to Results
+      // Completed all applicable questions -> move directly to Results and mark completed
+      assessmentService.saveSession(answers, totalQuestions, true);
       setViewMode('results');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -160,6 +164,9 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
   // Handle Restart Assessment from results or dialog
   const handleRestart = () => {
     assessmentService.clearSession();
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.removeItem('skillsaathi_active_family_id');
+    }
     setAnswers({});
     setActiveQuestionIndex(0);
     setHistoryStack([]);
@@ -209,6 +216,8 @@ export const AssessmentScreen: React.FC<AssessmentScreenProps> = ({
         <AssessmentResults
           results={resultsData}
           language={language}
+          answers={answers}
+          familyId={assessmentService.loadSession()?.familyId}
           onExploreCourses={() => onNavigate && onNavigate(ROUTES.COURSES)}
           onViewCourseDetails={(cId) => {
             if (onViewCourseDetails) onViewCourseDetails(cId);

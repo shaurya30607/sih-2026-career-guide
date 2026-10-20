@@ -31,6 +31,7 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
       filters.minEducation ||
       filters.trainingMode ||
       filters.maxDurationMonths ||
+      filters.district ||
       filters.bookmarkedOnly
   );
 
@@ -134,6 +135,32 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
 
       {/* Secondary Dropdown Filter Strip */}
       <div className="taste-filter-dropdowns">
+        {/* District Selector (Hyperlocal Engine) */}
+        <div className="taste-filter-select-group">
+          <label htmlFor="filter-district" className="taste-filter-select-label">
+            {isHi ? 'जिला (District)' : isMr ? 'जिल्हा (District)' : 'District'}:
+          </label>
+          <select
+            id="filter-district"
+            className="taste-filter-select"
+            value={filters.district || ''}
+            onChange={(e) =>
+              onFilterChange({
+                ...filters,
+                district: e.target.value || undefined,
+              })
+            }
+            aria-label={isHi ? 'जिला चुनें' : isMr ? 'जिल्हा निवडा' : 'Select District'}
+          >
+            <option value="">{isHi ? 'सभी जिले (All)' : isMr ? 'सर्व जिल्हे (All)' : 'All Districts'}</option>
+            <option value="Pune">{isHi ? 'पुणे (Pune)' : isMr ? 'पुणे (Pune)' : 'Pune'}</option>
+            <option value="Nashik">{isHi ? 'नाशिक (Nashik)' : isMr ? 'नाशिक (Nashik)' : 'Nashik'}</option>
+            <option value="Chhatrapati Sambhajinagar">{isHi ? 'छत्रपति संभाजीनगर' : isMr ? 'छत्रपती संभाजीनगर' : 'Chhatrapati Sambhajinagar'}</option>
+            <option value="Nagpur">{isHi ? 'नागपुर (Nagpur)' : isMr ? 'नागपूर (Nagpur)' : 'Nagpur'}</option>
+            <option value="Mumbai Suburban">{isHi ? 'मुंबई उपनगर' : isMr ? 'मुंबई उपनगर' : 'Mumbai Suburban'}</option>
+          </select>
+        </div>
+
         {/* Education Level Selector */}
         <div className="taste-filter-select-group">
           <label htmlFor="filter-min-edu" className="taste-filter-select-label">

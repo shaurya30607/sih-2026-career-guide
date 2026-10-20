@@ -9,6 +9,7 @@ export interface OnboardingPreferences {
   district?: string;
   careerInterests: VocationalStream[];
   completed: boolean;
+  familyId?: string;
 }
 
 export const MAHARASHTRA_DISTRICTS = [

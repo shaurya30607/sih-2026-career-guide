@@ -16,6 +16,7 @@ import { EducationLevelRequired, VocationalStream } from '../../types/course';
 import { OnboardingPreferences, OnboardingRole, MAHARASHTRA_DISTRICTS } from './types';
 import { getOnboardingPreferences, saveOnboardingPreferences } from './storage';
 import { VOCATIONAL_STREAMS } from '../../services/courses/courseService';
+import { apiClient } from '../../services/api/client';
 
 export interface OnboardingFlowProps {
   onComplete: (preferences: OnboardingPreferences) => void;
@@ -64,6 +65,42 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onSk
       completed: true,
     };
     saveOnboardingPreferences(prefs);
+
+    if (!isSkipped) {
+      // Connect to persistent backend session
+      apiClient
+        .post<{ id: string }>('/families', {
+          family_name: role === 'parent' ? 'Parent Onboarding Intake' : 'Student Onboarding Intake',
+          language: 'en',
+          district: district || 'Pune',
+          state: state || 'Maharashtra',
+        })
+        .then(async (family) => {
+          if (family && family.id) {
+            prefs.familyId = family.id;
+            saveOnboardingPreferences(prefs);
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem('skillsaathi_active_family_id', family.id);
+            }
+
+            if (role !== 'parent') {
+              await apiClient
+                .post(`/families/${family.id}/student`, {
+                  student_name: 'Student Learner',
+                  education_level: educationLevel || '10th_pass',
+                  career_interests: careerInterests.length > 0 ? careerInterests : ['renewable_energy'],
+                  preferred_location: district || 'Pune',
+                  pre_confidence_score: 5.0,
+                })
+                .catch((err) => console.warn('Backend student profile save warning:', err));
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('Backend family session init offline, using local storage:', err);
+        });
+    }
+
     if (isSkipped) {
       onSkip();
     } else {

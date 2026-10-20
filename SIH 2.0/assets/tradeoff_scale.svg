@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Base & Pole -->
+  <line x1="28" y1="104" x2="92" y2="104" stroke="#0B132B" stroke-width="5" stroke-linecap="round"/>
+  <line x1="60" y1="32" x2="60" y2="104" stroke="#0B132B" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="60" cy="32" r="5" fill="#0D9488"/>
+
+  <!-- Tilting Lever Beam -->
+  <line x1="22" y1="42" x2="98" y2="34" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Left Pan (Costs/Time) -->
+  <line x1="24" y1="42" x2="16" y2="64" stroke="#64748B" stroke-width="2"/>
+  <line x1="24" y1="42" x2="32" y2="64" stroke="#64748B" stroke-width="2"/>
+  <path d="M 12 64 Q 24 74 36 64 Z" fill="#E2E8F0" stroke="#0B132B" stroke-width="2"/>
+  <rect x="20" y="55" width="8" height="9" fill="#F59E0B" rx="1.5"/>
+
+  <!-- Right Pan (ROI/Wages Higher) -->
+  <line x1="96" y1="34" x2="88" y2="56" stroke="#64748B" stroke-width="2"/>
+  <line x1="96" y1="34" x2="104" y2="56" stroke="#64748B" stroke-width="2"/>
+  <path d="M 84 56 Q 96 66 108 56 Z" fill="#CCFBF1" stroke="#0D9488" stroke-width="2"/>
+  <circle cx="96" cy="50" r="5" fill="#0D9488"/>
+  <text x="96" y="53" font-family="Calibri" font-size="8" font-weight="bold" fill="#FFFFFF" text-anchor="middle">₹</text>
+</svg>

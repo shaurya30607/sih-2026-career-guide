@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Student (left, confused) -->
+  <circle cx="34" cy="42" r="13" fill="#E11D48"/>
+  <path d="M16 88 C16 66 52 66 52 88 Z" fill="#E11D48"/>
+  <text x="34" y="24" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#E11D48" text-anchor="middle">?</text>
+  
+  <!-- Parent (right, anxious) -->
+  <circle cx="86" cy="38" r="15" fill="#475569"/>
+  <path d="M66 88 C66 62 106 62 106 88 Z" fill="#475569"/>
+  <text x="86" y="18" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#475569" text-anchor="middle">?</text>
+  
+  <!-- Disconnected / Broken vector between them -->
+  <line x1="48" y1="58" x2="60" y2="52" stroke="#E11D48" stroke-width="2.5" stroke-dasharray="3,3"/>
+  <line x1="60" y1="52" x2="72" y2="62" stroke="#475569" stroke-width="2.5" stroke-dasharray="3,3"/>
+  <circle cx="60" cy="52" r="4" fill="#9F1239"/>
+</svg>
